@@ -11,3 +11,6 @@ nanobot-review.html
 cover.html
 cover.png
 xiaohongshu*.md
+
+# local model files (large, do not commit)
+models/
