@@ -1,0 +1,5 @@
+# SenseVoice (FunASR) Chinese engine — heavy (pulls torch). Optional but recommended.
+funasr
+modelscope
+torch
+torchaudio

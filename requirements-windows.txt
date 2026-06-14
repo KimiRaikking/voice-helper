@@ -1,0 +1,4 @@
+# Windows / Linux extras (CPU Whisper + cross-platform tray)
+faster-whisper
+pystray
+pillow

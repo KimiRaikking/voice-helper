@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎙️ Voice — 全局语音输入工具</title>
+<style>
+  :root {
+    --bg: #0f1115; --card: #171a21; --fg: #e6e8ec; --muted: #9aa3b2;
+    --accent: #6ea8fe; --border: #262b36; --code-bg: #0b0d11; --green: #4ade80; --red: #f87171;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font-family: -apple-system, "SF Pro Text", "Helvetica Neue", "PingFang SC", sans-serif;
+    line-height: 1.7; font-size: 16px;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 48px 24px 96px; }
+  header { text-align: center; margin-bottom: 40px; }
+  header h1 { font-size: 2.2rem; margin: 0 0 8px; }
+  header p { color: var(--muted); margin: 0; font-size: 1.05rem; }
+  h2 {
+    margin: 48px 0 16px; padding-bottom: 8px; font-size: 1.4rem;
+    border-bottom: 2px solid var(--border);
+  }
+  h3 { margin: 28px 0 12px; font-size: 1.1rem; color: var(--accent); }
+  p, li { color: var(--fg); }
+  a { color: var(--accent); }
+  code {
+    background: var(--code-bg); padding: 2px 6px; border-radius: 5px;
+    font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 0.88em; color: #e6c07b;
+  }
+  pre {
+    background: var(--code-bg); border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px; overflow-x: auto; margin: 14px 0;
+  }
+  pre code { background: none; padding: 0; color: #d7dae0; }
+  table {
+    width: 100%; border-collapse: collapse; margin: 16px 0;
+    background: var(--card); border-radius: 10px; overflow: hidden;
+  }
+  th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: #1d2230; color: var(--fg); font-weight: 600; }
+  tr:last-child td { border-bottom: none; }
+  td code { white-space: nowrap; }
+  .card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 18px 22px; margin: 16px 0;
+  }
+  .note {
+    border-left: 4px solid var(--accent); background: #161c2b;
+    padding: 12px 18px; border-radius: 0 10px 10px 0; margin: 16px 0; color: var(--muted);
+  }
+  .warn { border-left-color: var(--red); background: #2a1717; }
+  .plan { border-left-color: #b07cff; background: #20182b; }
+  ul { padding-left: 22px; }
+  .toc a { display: inline-block; margin: 3px 10px 3px 0; color: var(--muted); text-decoration: none; }
+  .toc a:hover { color: var(--accent); }
+  .big-emoji { font-size: 1.15em; }
+  footer { margin-top: 60px; text-align: center; color: var(--muted); font-size: 0.85rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>🎙️ Voice — 全局语音输入工具</h1>
+  <p>按住说话,松开即转写并自动插入光标处 · 多引擎可切换(Whisper / SenseVoice) · 全局任意 App 可用</p>
+</header>
+
+<div class="card toc">
+  <strong>目录</strong><br>
+  <a href="#what">① 能做什么</a>
+  <a href="#files">② 文件结构</a>
+  <a href="#use">③ 日常使用</a>
+  <a href="#engine">④ 识别引擎</a>
+  <a href="#config">⑤ 配置项</a>
+  <a href="#edit">⑥ 修改配置</a>
+  <a href="#autostart">⑦ 开机自启</a>
+  <a href="#perm">⑧ 系统权限</a>
+  <a href="#faq">⑨ 常见问题</a>
+  <a href="#plan">⑩ 规划:热词</a>
+  <a href="#uninstall">⑪ 卸载</a>
+</div>
+
+<h2 id="what">① 它能做什么</h2>
+<ul>
+  <li><b>全局可用</b>:任何能接受粘贴的输入框(终端、浏览器、微信、备忘录、邮件……)都能用。</li>
+  <li><b>按住说话</b>:按住「右 Option」键录音,松开即转写并自动粘贴。</li>
+  <li><b>多引擎可切换</b>:Whisper(多语言)/ SenseVoice(中文优化),<code>VOICE_ENGINE</code> 一键切换,模型都在本地、互不替换。</li>
+  <li><b>状态可见</b>:顶部菜单栏图标实时显示状态,并标注当前引擎。</li>
+  <li><b>强制简体中文</b>:偶尔输出繁体时自动转简体(不影响英文)。</li>
+  <li><b>开机自启</b>:后台服务,开机自动运行、崩溃自动重启。</li>
+</ul>
+<div class="note warn"><b>例外</b>:密码输入框(macOS 安全键盘机制屏蔽模拟粘贴)、全屏独占键盘的 App 可能用不了。</div>
+
+<h2 id="files">② 目录与文件结构</h2>
+<p>所有东西都在 <code>~/voice-claude/</code>:</p>
+<table>
+  <tr><th>路径</th><th>说明</th></tr>
+  <tr><td><code>voiced.py</code></td><td>主程序:守护进程 + 菜单栏图标 + 多引擎转写</td></tr>
+  <tr><td><code>dictate.py</code></td><td>备用:一次性录音 → 转写 → 复制到剪贴板</td></tr>
+  <tr><td><code>voiced</code> / <code>dictate</code></td><td>启动脚本(已软链到 <code>~/.local/bin</code>)</td></tr>
+  <tr><td><code>.venv/</code></td><td>Python 虚拟环境(依赖都在这)</td></tr>
+  <tr><td><code>voiced.log</code></td><td>运行日志</td></tr>
+  <tr><td><code>~/Library/LaunchAgents/com.zhanggang.voiced.plist</code></td><td>开机自启配置</td></tr>
+</table>
+<h3>技术栈</h3>
+<table>
+  <tr><th>组件</th><th>用途</th></tr>
+  <tr><td><code>mlx-whisper</code></td><td>Whisper 引擎(MLX 加速,吃满 M 芯片 GPU)</td></tr>
+  <tr><td><code>funasr</code> + <code>modelscope</code> + <code>torchaudio</code></td><td>SenseVoice 中文引擎(模型从 ModelScope 下)</td></tr>
+  <tr><td><code>sounddevice</code></td><td>麦克风录音</td></tr>
+  <tr><td><code>pynput</code></td><td>全局热键 + 模拟 Cmd-V 粘贴</td></tr>
+  <tr><td><code>rumps</code></td><td>菜单栏状态图标</td></tr>
+  <tr><td><code>opencc</code></td><td>繁体强制转简体</td></tr>
+</table>
+<p><b>模型缓存</b>:Whisper → <code>~/.cache/huggingface/</code>;SenseVoice → <code>~/.cache/modelscope/hub/models/iic/SenseVoiceSmall</code>(~900MB)。</p>
+
+<h2 id="use">③ 日常使用</h2>
+<ol>
+  <li>把光标放进任意输入框。</li>
+  <li><b>按住「右 Option」键</b> → 说话 → <b>松开</b>。</li>
+  <li>文字自动转写并粘贴到光标处。</li>
+</ol>
+<p>菜单栏图标(屏幕<b>最顶部</b>系统栏)实时显示状态;点开菜单可见<b>当前引擎</b>(<code>[Whisper]</code>/<code>[SenseVoice]</code>)、最近识别文字(点击可复制)、退出按钮。</p>
+<table>
+  <tr><th>图标</th><th>含义</th></tr>
+  <tr><td class="big-emoji">🎤</td><td>待命</td></tr>
+  <tr><td class="big-emoji">🔴</td><td>录音中</td></tr>
+  <tr><td class="big-emoji">⏳</td><td>转写中</td></tr>
+  <tr><td class="big-emoji">✅</td><td>完成(闪一下回到 🎤)</td></tr>
+  <tr><td class="big-emoji">⚠️</td><td>太短 / 失败</td></tr>
+</table>
+
+<h2 id="engine">④ 识别引擎</h2>
+<p>通过 <code>VOICE_ENGINE</code> 选择,两个引擎模型都在本地,可随时切换:</p>
+<table>
+  <tr><th>引擎</th><th>VOICE_ENGINE</th><th>特点</th><th>适用</th></tr>
+  <tr><td><b>Whisper</b></td><td><code>whisper</code>(默认)</td><td>多语言,中英混说友好</td><td>通用 / 英文多</td></tr>
+  <tr><td><b>SenseVoice</b></td><td><code>sensevoice</code></td><td>阿里达摩院,中文/方言优化,带智能标点,非自回归极快</td><td>中文为主</td></tr>
+</table>
+<div class="note"><b>关于准确度</b>:中文「技术同音词」(时延 / 实验 / 食言)对<b>所有通用模型</b>都是难点——会默认挑最常见的词,换模型只能小幅缓解。真正对症的是<b>热词偏置</b>(见第⑩节)。</div>
+
+<h2 id="config">⑤ 配置项(环境变量)</h2>
+<table>
+  <tr><th>环境变量</th><th>作用</th><th>默认</th></tr>
+  <tr><td><code>VOICE_ENGINE</code></td><td>识别引擎:whisper / sensevoice</td><td>whisper</td></tr>
+  <tr><td><code>VOICE_KEY</code></td><td>热键:alt_r/alt_l/ctrl_r/cmd_r/f5…</td><td>alt_r(右Option)</td></tr>
+  <tr><td><code>VOICE_LANG</code></td><td>强制语言 zh/en;空=自动</td><td>空</td></tr>
+  <tr><td><code>WHISPER_MODEL</code></td><td>Whisper 用的模型</td><td>whisper-large-v3-turbo</td></tr>
+  <tr><td><code>SENSEVOICE_MODEL</code></td><td>SenseVoice 用的模型</td><td>iic/SenseVoiceSmall</td></tr>
+  <tr><td><code>VOICE_PROMPT</code></td><td>Whisper 专用,热词/上下文提示</td><td>一组技术词</td></tr>
+  <tr><td><code>VOICE_SOUND</code></td><td>设值=开声音提示</td><td>关</td></tr>
+  <tr><td><code>VOICE_NOTIFY</code></td><td>设 <code>1</code>=完成弹通知</td><td>关</td></tr>
+  <tr><td><code>VOICE_NO_PASTE</code></td><td>设值=只复制不粘贴</td><td>关</td></tr>
+</table>
+<h3>Whisper 模型选项(速度 vs 精度)</h3>
+<table>
+  <tr><th>模型</th><th>大小</th><th>速度</th><th>精度</th></tr>
+  <tr><td><code>whisper-small-mlx</code></td><td>~0.5GB</td><td>很快</td><td>中</td></tr>
+  <tr><td><b>whisper-large-v3-turbo</b> ←默认</td><td>~1.6GB</td><td>快(~0.8s)</td><td>高</td></tr>
+  <tr><td><code>whisper-large-v3-mlx</code></td><td>~3GB</td><td>稍慢</td><td>最高</td></tr>
+</table>
+<h3>当前生效配置(plist)</h3>
+<pre><code>VOICE_KEY=alt_r
+VOICE_ENGINE=sensevoice
+VOICE_LANG=zh
+VOICE_PROMPT=&lt;一组技术热词&gt;</code></pre>
+
+<h2 id="edit">⑥ 如何修改配置</h2>
+<pre><code>open -e ~/Library/LaunchAgents/com.zhanggang.voiced.plist</code></pre>
+<p>在 <code>EnvironmentVariables</code> 的 <code>&lt;dict&gt;</code> 里增删,例如切回 Whisper:</p>
+<pre><code>&lt;key&gt;VOICE_ENGINE&lt;/key&gt;
+&lt;string&gt;whisper&lt;/string&gt;</code></pre>
+<p>改完<b>重启服务</b>生效:</p>
+<pre><code>launchctl kickstart -k gui/$(id -u)/com.zhanggang.voiced</code></pre>
+
+<h2 id="autostart">⑦ 开机自启 / 服务管理</h2>
+<p>后台常驻靠 macOS <b>LaunchAgent</b>:<code>RunAtLoad=true</code>(登录即启动)、<code>KeepAlive=true</code>(崩溃自动重启)。</p>
+<pre><code># 查看是否在运行
+launchctl list | grep voiced
+
+# 重启(改完代码或配置后)
+launchctl kickstart -k gui/$(id -u)/com.zhanggang.voiced
+
+# 临时关闭 / 重新开启
+launchctl unload ~/Library/LaunchAgents/com.zhanggang.voiced.plist
+launchctl load   ~/Library/LaunchAgents/com.zhanggang.voiced.plist
+
+# 实时看日志
+tail -f ~/voice-claude/voiced.log</code></pre>
+
+<h2 id="perm">⑧ 系统权限(首次/换机必做)</h2>
+<p>后台进程需三项权限,授给这个 Python 二进制:</p>
+<pre><code>/Users/zhanggang/.local/share/uv/python/cpython-3.13.13-macos-aarch64-none/bin/python3.13</code></pre>
+<table>
+  <tr><th>权限</th><th>用途</th></tr>
+  <tr><td>输入监控 (Input Monitoring)</td><td>监听「右 Option」热键</td></tr>
+  <tr><td>辅助功能 (Accessibility)</td><td>模拟 Cmd-V 自动粘贴</td></tr>
+  <tr><td>麦克风 (Microphone)</td><td>录音</td></tr>
+</table>
+<div class="note warn">文件选择框灰掉无法选中时,改用「从 Finder 拖拽」加入列表。授权后需重启服务。</div>
+
+<h2 id="faq">⑨ 常见问题</h2>
+<div class="card">
+  <p><b>按了没反应,日志报 <code>PortAudioError ... [PaErrorCode -9986]</code>?</b><br>
+  录音设备状态变了(插拔耳机、切换音频输出、麦克风被占用)导致 PortAudio 缓存失效。<b>重启服务</b>即可恢复:</p>
+  <pre><code>launchctl kickstart -k gui/$(id -u)/com.zhanggang.voiced</code></pre>
+  <p><b>菜单栏看不到图标?</b> 在屏幕<b>最顶部系统栏</b>(不是终端里),刘海可能挡住。按住热键说话时盯顶栏看图标变化即正常。</p>
+  <p><b>按键没反应</b> → 缺「输入监控」;<b>有识别但没粘贴</b> → 缺「辅助功能」;<b>录不到音</b> → 缺「麦克风」。授权后均需重启服务。</p>
+  <p><b>输出繁体字?</b> 已用 OpenCC 强制转简体;若仍出现,检查 <code>opencc</code> 是否在 venv 里。</p>
+  <p><b>改了 voiced.py 不生效?</b> 需 <code>launchctl kickstart -k ...</code> 重启。</p>
+  <p><b>下载 Whisper large-v3 卡在 <code>0.00B</code>?</b> HF 大文件改用了 Xet 后端,某些网络下会卡死。<b>禁用 Xet 走旧通道</b>:</p>
+  <pre><code>HF_HUB_DISABLE_XET=1 ~/voice-claude/.venv/bin/python -c \
+  "from huggingface_hub import snapshot_download; print(snapshot_download('mlx-community/whisper-large-v3-mlx'))"</code></pre>
+  <p>该模型权重文件名为 <code>weights.npz</code>(~3GB)。</p>
+</div>
+
+<h2 id="plan">⑩ 规划中:热词偏置(技术词准确度)</h2>
+<div class="note plan">
+  针对「技术同音词」(时延/实验、推理/椎离)的根治方案是<b>热词偏置</b>:
+  <ul>
+    <li>引擎换成 FunASR 的 <b>SeACo-Paraformer</b>(支持 <code>hotword</code> 参数)</li>
+    <li>新增 <code>VOICE_ENGINE=paraformer</code> 与 <code>VOICE_HOTWORD=&lt;词表&gt;</code></li>
+    <li>模型从 ModelScope 下载(国内快),funasr 已就绪</li>
+    <li>把高频技术词/专有名词放进 <code>VOICE_HOTWORD</code>,遇同音歧义强制优先匹配</li>
+  </ul>
+  <b>尚未启用。</b>启用后 Whisper / SenseVoice / Paraformer 三引擎可自由切换。
+</div>
+
+<h2 id="uninstall">⑪ 卸载</h2>
+<pre><code>launchctl unload ~/Library/LaunchAgents/com.zhanggang.voiced.plist
+rm ~/Library/LaunchAgents/com.zhanggang.voiced.plist
+rm ~/.local/bin/voiced ~/.local/bin/dictate
+rm -rf ~/voice-claude
+# 可选:删模型缓存
+# rm -rf ~/.cache/huggingface/hub/models--mlx-community--whisper-*
+# rm -rf ~/.cache/modelscope/hub/models/iic/SenseVoiceSmall</code></pre>
+
+<footer>Voice 语音输入工具 · 本机文档 · ~/voice-claude/README.html · 更新于 2026-06</footer>
+
+</div>
+</body>
+</html>

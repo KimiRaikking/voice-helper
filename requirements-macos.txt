@@ -1,0 +1,3 @@
+# macOS (Apple Silicon) extras
+mlx-whisper
+rumps

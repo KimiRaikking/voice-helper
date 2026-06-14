@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.pyc
+*.log
+voiced.log
+voice.env
+.DS_Store
+nanobot-review.html
+
+# marketing artifacts (not part of the tool)
+cover.html
+cover.png
+xiaohongshu*.md

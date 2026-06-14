@@ -1,0 +1,4 @@
+#!/bin/bash
+# Launcher: activates the venv and runs the dictation script.
+DIR="$HOME/voice-claude"
+exec "$DIR/.venv/bin/python" "$DIR/dictate.py" "$@"

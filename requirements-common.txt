@@ -1,0 +1,5 @@
+numpy
+sounddevice
+pynput
+pyperclip
+opencc-python-reimplemented
