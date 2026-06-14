@@ -24,6 +24,7 @@ Env:
 """
 import os
 import queue
+import sys
 import threading
 import time
 
@@ -310,7 +311,20 @@ def warmup():
         pass
 
 
+def _redirect_logs_if_no_console():
+    """Under Windows pythonw there is no console, so stdout/stderr are None and
+    any output (incl. errors) is lost. Send them to voiced.log next to the script."""
+    if sys.stdout is None or sys.stderr is None:
+        try:
+            logp = os.path.join(os.path.dirname(os.path.abspath(__file__)), "voiced.log")
+            f = open(logp, "a", buffering=1, encoding="utf-8", errors="replace")
+            sys.stdout = sys.stderr = f
+        except Exception:
+            pass
+
+
 def main():
+    _redirect_logs_if_no_console()
     vp.set_accessory_app()  # mac: menu-bar accessory (no Dock icon); no-op elsewhere
     threading.Thread(target=start_listener, daemon=True).start()
     threading.Thread(target=warmup, daemon=True).start()

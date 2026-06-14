@@ -11,14 +11,14 @@
 任意 Python 3.10+ 即可,安装脚本会自建 `.venv` 并装好对应平台的依赖、配置开机自启。
 
 ```bash
-git clone <仓库地址> voice-helper
+git clone https://github.com/KimiRaikking/voice-helper.git
 cd voice-helper
-python install.py          # Windows 用 py install.py 或 python install.py
+python install.py          # Windows 也可用 py install.py
 ```
 
-- **Windows**:`python install.py` 自动建环境、装 `faster-whisper`(CPU)+ SenseVoice、并在「启动」文件夹放一个隐藏启动项。装完即生效,开机自启。手动启动可双击 `run.bat`,看报错用 `run-debug.bat`。
+- **Windows**:`python install.py` 自动建环境、装 `faster-whisper`(CPU)+ SenseVoice、并在「启动」文件夹放一个隐藏启动项。装完即生效、开机自启。手动启动双击 `run.bat`,看报错用 `run-debug.bat`。
 - **macOS**:同一条命令,装 `mlx-whisper`(GPU)+ SenseVoice,并配 LaunchAgent。**额外需在系统设置授权**(见第⑧节)。
-- 改配置:编辑 `voice.env`(引擎/热键/语言),然后重启服务。
+- 改配置:编辑 `voice.env`(引擎/热键/语言),然后重启服务(见第⑥/⑦节)。
 
 > 首次说话会自动下载模型(SenseVoice 从 ModelScope,Whisper 从 HuggingFace),稍等片刻。
 
@@ -28,29 +28,28 @@ python install.py          # Windows 用 py install.py 或 python install.py
 |------|-------|---------|
 | Whisper 后端 | `mlx-whisper`(Apple GPU) | `faster-whisper`(CPU,int8) |
 | SenseVoice | funasr(通用) | funasr(通用) |
-| 状态指示 | 菜单栏 emoji(rumps) | 系统托盘彩色图标(pystray) |
+| 状态指示 | 顶部菜单栏 emoji(rumps) | 右下角系统托盘彩色图标(pystray) |
 | 粘贴 | Cmd+V | Ctrl+V |
 | 开机自启 | LaunchAgent | 启动文件夹 VBS(隐藏) |
 | 系统授权 | 需输入监控/辅助功能/麦克风 | 无需特殊授权 |
+| 日志 | `voiced.log` | `voiced.log`(pythonw 无控制台,已自动重定向) |
 
 ---
 
 ## 一、它能做什么
 
 - **全局可用**:任何能接受粘贴的输入框(终端、浏览器、微信、备忘录、邮件……)都能用。
-- **按住说话**:按住「右 Option」键录音,松开即转写并自动粘贴。
+- **按住说话**:按住热键(默认右 Option / 右 Alt)录音,松开即转写并自动粘贴。
 - **多引擎可切换**:Whisper(多语言)/ SenseVoice(中文优化),通过 `VOICE_ENGINE` 一键切换,模型都在本地、互不替换。
-- **状态可见**:屏幕顶部菜单栏图标实时显示状态,并标注当前引擎。
+- **状态可见**:状态图标实时显示(mac 菜单栏 / Windows 系统托盘),并标注当前引擎。
 - **强制简体中文**:偶尔输出繁体时自动转简体(不影响英文)。
 - **开机自启**:后台服务,开机自动运行、崩溃自动重启,无需手动开启。
 
-**例外**:密码输入框(macOS 安全键盘机制屏蔽模拟粘贴)、全屏独占键盘的 App 可能用不了。
+**例外**:密码输入框(系统安全键盘机制屏蔽模拟粘贴)、全屏独占键盘的 App 可能用不了。
 
 ---
 
 ## 二、目录与文件结构
-
-所有东西都在 `~/voice-helper/`:
 
 | 路径 | 说明 |
 |------|------|
@@ -62,43 +61,54 @@ python install.py          # Windows 用 py install.py 或 python install.py
 | `requirements-*.txt` | 分平台依赖清单(common / macos / windows / sensevoice) |
 | `run.bat` / `run-debug.bat` | Windows 手动启动 / 调试启动 |
 | `dictate.py` | 备用:一次性录音 → 转写 → 复制到剪贴板(不常驻) |
-| `~/voice-helper/.venv/` | Python 虚拟环境(所有依赖装在这里) |
-| `~/voice-helper/voiced.log` | 运行日志 |
-| `~/Library/LaunchAgents/com.zhanggang.voiced.plist` | 开机自启配置(LaunchAgent) |
+| `.venv/` | Python 虚拟环境(所有依赖装在这里) |
+| `voiced.log` | 运行日志 |
+
+**自启配置文件位置**
+
+- macOS:`~/Library/LaunchAgents/com.voicehelper.dictation.plist`
+- Windows:`%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\voice-helper.vbs`
 
 **技术栈**
 
-| 组件 | 用途 |
-|------|------|
-| `mlx-whisper` | Whisper 引擎(Apple MLX 加速,吃满 M 芯片 GPU) |
-| `funasr` + `modelscope` + `torchaudio` | SenseVoice 中文引擎(模型从 ModelScope 下载) |
-| `sounddevice` | 麦克风录音(自带 portaudio) |
-| `pynput` | 全局热键监听 + 模拟 Cmd-V 粘贴 |
-| `rumps` | 菜单栏状态图标 |
-| `opencc` | 繁体强制转简体 |
+| 组件 | 用途 | 平台 |
+|------|------|------|
+| `mlx-whisper` | Whisper 引擎(Apple MLX,吃满 GPU) | macOS |
+| `faster-whisper` | Whisper 引擎(CTranslate2,CPU int8) | Windows / Linux |
+| `funasr`+`modelscope`+`torchaudio` | SenseVoice 中文引擎 | 通用 |
+| `sounddevice` | 麦克风录音 | 通用 |
+| `pynput` | 全局热键 + 模拟粘贴 | 通用 |
+| `rumps` / `pystray`+`pillow` | 菜单栏 / 系统托盘图标 | mac / win |
+| `pyperclip` | 跨平台剪贴板 | 通用 |
+| `opencc` | 繁体强制转简体 | 通用 |
 
 **模型缓存位置**
 
-- Whisper:`~/.cache/huggingface/`(turbo 默认;large-v3 可选)
-- SenseVoice:`~/.cache/modelscope/hub/models/iic/SenseVoiceSmall`(~900MB)
+| 引擎 | macOS | Windows |
+|------|-------|---------|
+| Whisper | `~/.cache/huggingface/` | `%USERPROFILE%\.cache\huggingface\` |
+| SenseVoice | `~/.cache/modelscope/hub/models/iic/SenseVoiceSmall` | `%USERPROFILE%\.cache\modelscope\hub\models\iic\SenseVoiceSmall` |
 
 ---
 
 ## 三、日常使用
 
 1. 把光标放进任意输入框。
-2. **按住「右 Option」键** → 说话 → **松开**。
+2. **按住热键**(默认右 Option / 右 Alt)→ 说话 → **松开**。
 3. 文字自动转写并粘贴到光标处。
 
-菜单栏图标(屏幕**最顶部**系统栏,靠近刘海一侧)实时显示状态;点开菜单可见**当前引擎**(`[Whisper]` / `[SenseVoice]`)、最近一次识别文字(点击可复制)、退出按钮。
+状态图标实时显示;点开可见**当前引擎**(`[Whisper]`/`[SenseVoice]`)、最近识别文字(点击可复制)、退出按钮。
 
-| 图标 | 含义 |
-|------|------|
-| 🎤 | 待命 |
-| 🔴 | 录音中 |
-| ⏳ | 转写中 |
-| ✅ | 完成(闪一下回到 🎤) |
-| ⚠️ | 太短 / 失败 |
+- **macOS**:图标在屏幕**最顶部菜单栏**(靠近刘海一侧)。
+- **Windows**:图标在**右下角系统托盘**(若被折叠,点任务栏的 `^` 展开);**右键**图标看菜单。
+
+| 图标(mac) | 颜色(win) | 含义 |
+|------|------|------|
+| 🎤 | 蓝 | 待命 |
+| 🔴 | 红 | 录音中 |
+| ⏳ | 黄 | 转写中 |
+| ✅ | 绿 | 完成 |
+| ⚠️ | 橙 | 太短 / 失败 |
 
 ---
 
@@ -111,159 +121,197 @@ python install.py          # Windows 用 py install.py 或 python install.py
 | **Whisper** | `whisper`(默认) | 多语言,中英混说友好 | 通用、英文多 |
 | **SenseVoice** | `sensevoice` | 阿里达摩院,中文/方言优化,带智能标点,非自回归极快 | 中文为主 |
 
-> **关于准确度**:中文里的「技术同音词」(如 时延 / 实验 / 食言,推理 / 椎离)对**所有通用模型**都是难点——它们会默认挑最常见的词。换模型只能小幅缓解。真正对症的是**热词偏置**(给模型一份高频词清单强制优先匹配),可通过 FunASR 的 SeACo-Paraformer 实现(规划中,见第八节)。
+> **关于准确度**:中文「技术同音词」(时延 / 实验 / 食言)对**所有通用模型**都是难点——会默认挑最常见的词。换模型只能小幅缓解。真正对症的是**热词偏置**(见第⑩节)。
 
 ---
 
-## 五、配置项(环境变量)
+## 五、配置项
 
-所有配置通过环境变量控制,写在 LaunchAgent 的 `EnvironmentVariables` 段里(见第六节)。
+所有配置写在 **`voice.env`**(`voice.env.example` 复制而来),voiced 启动时自动读取;两个平台通用。
 
 | 环境变量 | 作用 | 默认值 |
 |---------|------|--------|
 | `VOICE_ENGINE` | 识别引擎:`whisper` / `sensevoice` | `whisper` |
-| `VOICE_KEY` | 说话热键:`alt_r`/`alt_l`/`ctrl_r`/`cmd_r`/`f5`… | `alt_r`(右 Option) |
+| `VOICE_KEY` | 说话热键:`alt_r`/`alt_l`/`ctrl_r`/`cmd_r`/`f5`… | `alt_r`(右 Option/Alt) |
 | `VOICE_LANG` | 强制语言,如 `zh`/`en`;留空=自动识别 | 空(自动) |
-| `WHISPER_MODEL` | Whisper 引擎用的模型 | `mlx-community/whisper-large-v3-turbo` |
-| `SENSEVOICE_MODEL` | SenseVoice 引擎用的模型 | `iic/SenseVoiceSmall` |
-| `VOICE_PROMPT` | Whisper 专用,热词/上下文提示(`initial_prompt`) | 一组技术词 |
+| `WHISPER_MODEL` | Whisper 模型(见下表,mac/win 取值不同) | 见下 |
+| `SENSEVOICE_MODEL` | SenseVoice 模型 | `iic/SenseVoiceSmall` |
+| `VOICE_PROMPT` | Whisper 专用,热词/上下文提示(`initial_prompt`) | 空 |
 | `VOICE_SOUND` | 设为任意值=开启声音提示 | 关 |
 | `VOICE_NOTIFY` | 设为 `1`=完成时弹通知显示识别文字 | 关 |
 | `VOICE_NO_PASTE` | 设为任意值=只复制到剪贴板,不自动粘贴 | 关(自动粘贴) |
 
-### Whisper 模型选项(速度 vs 精度)
+### Whisper 模型选项
+
+**macOS(mlx,默认 `mlx-community/whisper-large-v3-turbo`)**
 
 | 模型 | 大小 | 速度 | 精度 |
 |------|------|------|------|
 | `mlx-community/whisper-small-mlx` | ~0.5GB | 很快 | 中 |
-| `mlx-community/whisper-large-v3-turbo` ← 默认 | ~1.6GB | 快(~0.8s) | 高 |
+| `mlx-community/whisper-large-v3-turbo` | ~1.6GB | 快 | 高 |
 | `mlx-community/whisper-large-v3-mlx` | ~3GB | 稍慢 | 最高 |
 
-### 当前生效配置(plist)
+**Windows(faster-whisper,默认 `small`)** — 直接填规格名即可:
 
-```
-VOICE_KEY=alt_r
-VOICE_ENGINE=sensevoice
-VOICE_LANG=zh
-VOICE_PROMPT=<一组技术热词>
-```
+| `WHISPER_MODEL` | 大小 | CPU 速度 | 精度 |
+|------|------|------|------|
+| `small` ← 默认 | ~0.5GB | 快 | 中 |
+| `medium` | ~1.5GB | 中 | 中高 |
+| `large-v3` | ~3GB | 慢 | 最高 |
+
+> CPU 上 `medium` 是精度/速度较好的折中;追求准确用 `large-v3`(慢)。中文优先建议直接用 SenseVoice 引擎。
 
 ---
 
 ## 六、如何修改配置
 
-编辑 LaunchAgent 文件:
+通用:编辑 `voice.env` → 保存 → **重启服务**(见下)。
+
+**macOS**
 
 ```bash
-open -e ~/Library/LaunchAgents/com.zhanggang.voiced.plist
+open -e ~/voice-helper/voice.env     # 或任意编辑器
+launchctl kickstart -k gui/$(id -u)/com.voicehelper.dictation   # 重启生效
 ```
 
-在 `<key>EnvironmentVariables</key>` 下的 `<dict>` 里增删配置,例如切回 Whisper:
+**Windows**(在仓库目录)
 
-```xml
-<key>VOICE_ENGINE</key>
-<string>whisper</string>
-```
-
-改完后**重启服务**生效:
-
-```bash
-launchctl kickstart -k gui/$(id -u)/com.zhanggang.voiced
+```bat
+notepad voice.env
+:: 重启:先停掉再启动
+powershell -Command "Get-CimInstance Win32_Process | ? { $_.CommandLine -like '*voiced.py*' } | %% { Stop-Process -Id $_.ProcessId -Force }"
+run.bat
 ```
 
 ---
 
 ## 七、开机自启 / 服务管理
 
-后台常驻靠 macOS **LaunchAgent**:plist 里 `RunAtLoad=true`(登录即启动)、`KeepAlive=true`(崩溃自动重启)。
+### macOS(LaunchAgent)
+
+`RunAtLoad=true`(登录即启动)、`KeepAlive=true`(崩溃自动重启)。
 
 ```bash
-# 查看是否在运行(有输出即在跑)
-launchctl list | grep voiced
-
-# 重启(改完代码或配置后用)
-launchctl kickstart -k gui/$(id -u)/com.zhanggang.voiced
-
-# 临时关闭 / 重新开启
-launchctl unload ~/Library/LaunchAgents/com.zhanggang.voiced.plist
-launchctl load   ~/Library/LaunchAgents/com.zhanggang.voiced.plist
-
-# 实时看日志
-tail -f ~/voice-helper/voiced.log
+launchctl list | grep voicehelper                                  # 是否在跑
+launchctl kickstart -k gui/$(id -u)/com.voicehelper.dictation       # 重启
+launchctl unload ~/Library/LaunchAgents/com.voicehelper.dictation.plist   # 关闭
+launchctl load   ~/Library/LaunchAgents/com.voicehelper.dictation.plist   # 开启
+tail -f ~/voice-helper/voiced.log                                   # 看日志
 ```
+
+### Windows(启动文件夹 VBS)
+
+`install.py` 在启动文件夹放了 `voice-helper.vbs`,用 `pythonw` 隐藏窗口运行,登录即起。
+
+```bat
+:: 是否在跑
+tasklist | findstr pythonw
+
+:: 重启:停掉 voiced 再用 run.bat 启动
+powershell -Command "Get-CimInstance Win32_Process | ? { $_.CommandLine -like '*voiced.py*' } | %% { Stop-Process -Id $_.ProcessId -Force }"
+run.bat
+
+:: 关闭自启:删掉启动文件夹里的 vbs
+del "%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\voice-helper.vbs"
+
+:: 看日志
+type voiced.log
+```
+
+> 调试时直接跑 `run-debug.bat`(显示控制台,能看到实时报错),Ctrl+C 退出。
 
 ---
 
-## 八、系统权限(首次/换机必做)
+## 八、系统权限
 
-后台进程需三项权限,授给那个 Python 解释器二进制:
+### macOS(必做)
 
-```
-/Users/zhanggang/.local/share/uv/python/cpython-3.13.13-macos-aarch64-none/bin/python3.13
-```
-
-在 **系统设置 → 隐私与安全性** 里授权:
+后台进程需三项权限,授给那个 Python 解释器二进制(路径见 `which python` 或 venv 里的 `.venv/bin/python` 解析后的真实路径):
 
 | 权限 | 用途 |
 |------|------|
-| **输入监控 (Input Monitoring)** | 监听「右 Option」热键 |
+| **输入监控 (Input Monitoring)** | 监听热键 |
 | **辅助功能 (Accessibility)** | 模拟 Cmd-V 自动粘贴 |
 | **麦克风 (Microphone)** | 录音 |
 
-> 文件选择框灰掉无法选中时,改用「从 Finder 拖拽」该二进制到列表里。授权后需重启服务。
+在 **系统设置 → 隐私与安全性** 里逐项添加;文件选择框灰掉无法选中时,改用「从 Finder 拖拽」该二进制。授权后需重启服务。
+
+### Windows(基本无需)
+
+- 不需要输入监控/辅助功能这类授权。
+- 首次录音若 Win11 弹**麦克风**询问,允许即可;或到 **设置 → 隐私和安全性 → 麦克风**,打开「允许桌面应用访问麦克风」。
+- 首次运行 SmartScreen/杀软可能提示未知发布者,选「仍要运行」。
 
 ---
 
 ## 九、常见问题
 
-**按了没反应,日志报 `PortAudioError ... [PaErrorCode -9986]`?**
-录音设备状态变了(插拔耳机、切换音频输出、麦克风被别的程序占用)导致 PortAudio 缓存失效。**重启服务**即可恢复:
+**按了没反应 / 录音失效?**
+- **macOS** 日志报 `PaErrorCode -9986`:音频设备变了(插拔耳机、切换输出)导致 PortAudio 缓存失效。重启服务:
+  `launchctl kickstart -k gui/$(id -u)/com.voicehelper.dictation`
+- **Windows**:同理切换音频设备后重启服务(停掉 `voiced.py` 进程 + `run.bat`)。
+- 还不行 → 看「权限」:mac 缺输入监控/辅助功能;Windows 缺麦克风权限。
+
+**状态图标看不到?**
+- macOS:在屏幕**最顶部菜单栏**,刘海可能挡住;按住热键说话时盯顶栏看变化。
+- Windows:在**右下角托盘**,可能被折叠 → 点任务栏 `^` 展开;可拖到常驻区。
+
+**有识别但没自动粘贴?**
+- macOS:缺「辅助功能」权限。
+- Windows:目标窗口可能拦截了模拟按键;先确认 `voice.env` 没设 `VOICE_NO_PASTE`,文字其实已在剪贴板,手动 Ctrl+V 可粘。
+
+**输出繁体字?** 已用 OpenCC 强制转简体;若仍出现,确认 `opencc`(或 `opencc-python-reimplemented`)在 venv 里。
+
+**改了 `voiced.py` / `voice.env` 不生效?** 需重启服务(见第⑥/⑦节)。
+
+**下载模型一直卡在 `0.00B`?**
+HF 大文件改用了 Xet 后端,某些网络会卡死。**禁用 Xet 走旧通道**(两个平台通用,改成你的 venv python 路径):
 ```bash
-launchctl kickstart -k gui/$(id -u)/com.zhanggang.voiced
+# macOS
+HF_HUB_DISABLE_XET=1 ~/voice-helper/.venv/bin/python -c "from huggingface_hub import snapshot_download; print(snapshot_download('mlx-community/whisper-large-v3-mlx'))"
 ```
-
-**菜单栏看不到图标?**
-图标在屏幕**最顶部系统栏**(不是终端里),MacBook 刘海可能挡住。按住热键说话时盯顶栏看图标变化即正常。
-
-**按键没反应** → 缺「输入监控」权限。
-**有识别但没粘贴** → 缺「辅助功能」权限。
-**录不到音** → 缺「麦克风」权限。
-(授权后均需重启服务)
-
-**输出繁体字?** 已用 OpenCC 强制转简体;若仍出现,检查 `opencc` 是否在 venv 里。
-
-**改了 `voiced.py` 代码不生效?** 需 `launchctl kickstart -k gui/$(id -u)/com.zhanggang.voiced` 重启。
-
-**下载 Whisper large-v3 一直卡在 `0.00B`?**
-HF 大文件已改用 Xet 后端,某些网络下会卡死。**禁用 Xet 走旧通道**即可:
-```bash
-HF_HUB_DISABLE_XET=1 ~/voice-helper/.venv/bin/python -c \
-  "from huggingface_hub import snapshot_download; print(snapshot_download('mlx-community/whisper-large-v3-mlx'))"
+```bat
+:: Windows(faster-whisper 模型同理,把仓库名换成对应的)
+set HF_HUB_DISABLE_XET=1
+.venv\Scripts\python -c "from huggingface_hub import snapshot_download; print(snapshot_download('Systran/faster-whisper-small'))"
 ```
-该模型权重文件名为 `weights.npz`(~3GB),下完后 `~/.cache/huggingface/.../snapshots/` 里应能看到它。
+SenseVoice 走 ModelScope(国内快),一般不受此问题影响。
 
 ---
 
 ## 十、规划中:热词偏置(技术词准确度)
 
-针对「技术同音词」(时延/实验、推理/椎离 等)的根治方案是**热词偏置**:
+针对「技术同音词」(时延/实验、推理/椎离)的根治方案是**热词偏置**:
 - 引擎换成 FunASR 的 **SeACo-Paraformer**(支持 `hotword` 参数)
 - 新增 `VOICE_ENGINE=paraformer` 与 `VOICE_HOTWORD=<词表>` 配置
-- 模型从 ModelScope 下载(国内快),funasr 已就绪
-- 把高频技术词/专有名词放进 `VOICE_HOTWORD`,遇到同音歧义时强制优先匹配
+- 模型从 ModelScope 下载(国内快),funasr 已就绪、跨平台
+- 把高频技术词/专有名词放进 `VOICE_HOTWORD`,遇同音歧义强制优先匹配
 
-> 尚未启用。启用后 Whisper / SenseVoice / Paraformer 三个引擎可自由切换。
+> 尚未启用。启用后 Whisper / SenseVoice / Paraformer 三引擎可自由切换。
 
 ---
 
 ## 十一、卸载
 
+### macOS
+
 ```bash
-launchctl unload ~/Library/LaunchAgents/com.zhanggang.voiced.plist
-rm ~/Library/LaunchAgents/com.zhanggang.voiced.plist
-rm ~/.local/bin/voiced ~/.local/bin/dictate
+launchctl unload ~/Library/LaunchAgents/com.voicehelper.dictation.plist
+rm ~/Library/LaunchAgents/com.voicehelper.dictation.plist
+rm -f ~/.local/bin/voiced ~/.local/bin/dictate
 rm -rf ~/voice-helper
 # 可选:删模型缓存
 # rm -rf ~/.cache/huggingface/hub/models--mlx-community--whisper-*
 # rm -rf ~/.cache/modelscope/hub/models/iic/SenseVoiceSmall
+```
+
+### Windows
+
+```bat
+:: 停进程 + 删自启 + 删目录
+powershell -Command "Get-CimInstance Win32_Process | ? { $_.CommandLine -like '*voiced.py*' } | %% { Stop-Process -Id $_.ProcessId -Force }"
+del "%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\voice-helper.vbs"
+rmdir /s /q "%USERPROFILE%\voice-helper"
+:: 可选:删模型缓存
+:: rmdir /s /q "%USERPROFILE%\.cache\modelscope\hub\models\iic\SenseVoiceSmall"
 ```
