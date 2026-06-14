@@ -161,6 +161,10 @@ python install.py          # Windows 也可用 py install.py
 
 > CPU 上 `medium` 是精度/速度较好的折中;追求准确用 `large-v3`(慢)。中文优先建议直接用 SenseVoice 引擎。
 
+> 💡 **本地模型目录**:`WHISPER_MODEL` 也可填一个**本地文件夹路径**(含 `config.json` + 权重)。当 HF 在线下载卡死时,可手动把模型拉到 `models/` 下再指过去(见第⑨节「下载卡 0.00B」)。
+
+> ⚙️ **配置优先级**:`voice.env` 是配置的唯一来源(mac 的 LaunchAgent plist 已不再写环境变量)。若进程环境里真的设了同名变量,则它优先于 `voice.env`。
+
 ---
 
 ## 六、如何修改配置
@@ -264,18 +268,29 @@ type voiced.log
 
 **改了 `voiced.py` / `voice.env` 不生效?** 需重启服务(见第⑥/⑦节)。
 
-**下载模型一直卡在 `0.00B`?**
-HF 大文件改用了 Xet 后端,某些网络会卡死。**禁用 Xet 走旧通道**(两个平台通用,改成你的 venv python 路径):
+**下载 Whisper 大模型一直卡在 `0.00B`?**
+HF 大文件改用了 Xet 后端,国内网络经常卡死。先试**禁用 Xet 走旧通道**:
 ```bash
-# macOS
 HF_HUB_DISABLE_XET=1 ~/voice-helper/.venv/bin/python -c "from huggingface_hub import snapshot_download; print(snapshot_download('mlx-community/whisper-large-v3-mlx'))"
 ```
-```bat
-:: Windows(faster-whisper 模型同理,把仓库名换成对应的)
-set HF_HUB_DISABLE_XET=1
-.venv\Scripts\python -c "from huggingface_hub import snapshot_download; print(snapshot_download('Systran/faster-whisper-small'))"
+若 `large-v3`(权重 `weights.npz` ~3GB)**仍然卡死**(实测国内网络 huggingface_hub 客户端对 3GB 文件极不稳定),改用**最可靠的办法:curl 国内镜像直接拉到本地目录**(绕开整个 huggingface_hub/Xet,纯 HTTP + 断点续传):
+```bash
+DIR=~/voice-helper/models/whisper-large-v3-mlx
+mkdir -p "$DIR" && cd "$DIR"
+# 大权重(2.9GB,断点续传、自动重试)
+curl -L -C - --retry 30 --retry-delay 5 --retry-all-errors -o weights.npz \
+  "https://hf-mirror.com/mlx-community/whisper-large-v3-mlx/resolve/main/weights.npz"
+# 小配置
+curl -L -o config.json \
+  "https://hf-mirror.com/mlx-community/whisper-large-v3-mlx/resolve/main/config.json"
 ```
-SenseVoice 走 ModelScope(国内快),一般不受此问题影响。
+然后在 `voice.env` 里把 `WHISPER_MODEL` 指向这个**本地目录**(mlx 支持直接加载本地路径):
+```
+WHISPER_MODEL=/Users/<你>/voice-helper/models/whisper-large-v3-mlx
+```
+> `models/` 已在 `.gitignore` 里,大模型不会进 Git。Windows 上 faster-whisper 模型同理可换镜像/手动下。
+
+SenseVoice 走 ModelScope(国内快),一般不受此问题影响——**中文场景直接用 SenseVoice 引擎通常更省事**。
 
 ---
 

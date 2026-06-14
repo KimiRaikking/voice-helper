@@ -161,6 +161,8 @@ python install.py          # Windows 也可用 py install.py</code></pre>
   <tr><td><span class="os mac">mac</span></td><td><code>…whisper-small-mlx</code> / <code>…large-v3-turbo</code>(默认) / <code>…large-v3-mlx</code></td><td>turbo 最佳平衡</td></tr>
   <tr><td><span class="os win">win</span></td><td><code>small</code>(默认) / <code>medium</code> / <code>large-v3</code></td><td>CPU 上 medium 折中;中文优先用 SenseVoice</td></tr>
 </table>
+<div class="note">💡 <b>本地模型目录</b>:<code>WHISPER_MODEL</code> 也可填本地文件夹路径(含 <code>config.json</code> + 权重)。在线下载卡死时,手动把模型拉到 <code>models/</code> 再指过去(见第⑨节)。<br>
+⚙️ <b>配置优先级</b>:<code>voice.env</code> 是唯一配置源(mac 的 LaunchAgent plist 已不再写环境变量);进程环境里真设了同名变量则优先于 <code>voice.env</code>。</div>
 
 <h2 id="edit">⑥ 如何修改配置</h2>
 <p>通用:编辑 <code>voice.env</code> → 保存 → 重启服务。</p>
@@ -213,13 +215,17 @@ type voiced.log                                                  :: 看日志</c
   <p><b>有识别没粘贴?</b> mac 缺辅助功能权限;win 目标窗口可能拦截模拟键,文字已在剪贴板可手动 Ctrl+V。</p>
   <p><b>输出繁体?</b> 已用 OpenCC 转简体;确认 <code>opencc</code> 在 venv 里。</p>
   <p><b>改了不生效?</b> 重启服务(第⑥/⑦节)。</p>
-  <p><b>下载模型卡 <code>0.00B</code>?</b> HF 改用 Xet,禁用走旧通道:</p>
-  <pre><code># mac
-HF_HUB_DISABLE_XET=1 ~/voice-helper/.venv/bin/python -c "from huggingface_hub import snapshot_download; print(snapshot_download('mlx-community/whisper-large-v3-mlx'))"
-:: win
-set HF_HUB_DISABLE_XET=1
-.venv\Scripts\python -c "from huggingface_hub import snapshot_download; print(snapshot_download('Systran/faster-whisper-small'))"</code></pre>
-  <p>SenseVoice 走 ModelScope(国内快),一般不受影响。</p>
+  <p><b>下载 Whisper 大模型卡 <code>0.00B</code>?</b> HF 改用 Xet,国内常卡死。先试禁用 Xet:</p>
+  <pre><code>HF_HUB_DISABLE_XET=1 ~/voice-helper/.venv/bin/python -c "from huggingface_hub import snapshot_download; print(snapshot_download('mlx-community/whisper-large-v3-mlx'))"</code></pre>
+  <p><code>large-v3</code> 权重 <code>weights.npz</code> ~3GB <b>仍卡死</b>时(国内网络对 huggingface_hub 客户端的 3GB 文件极不稳),用<b>最可靠的办法:curl 国内镜像拉到本地目录</b>(纯 HTTP + 断点续传):</p>
+  <pre><code>DIR=~/voice-helper/models/whisper-large-v3-mlx
+mkdir -p "$DIR" && cd "$DIR"
+curl -L -C - --retry 30 --retry-delay 5 --retry-all-errors -o weights.npz \
+  "https://hf-mirror.com/mlx-community/whisper-large-v3-mlx/resolve/main/weights.npz"
+curl -L -o config.json \
+  "https://hf-mirror.com/mlx-community/whisper-large-v3-mlx/resolve/main/config.json"</code></pre>
+  <p>再把 <code>voice.env</code> 的 <code>WHISPER_MODEL</code> 指向这个<b>本地目录</b>(mlx 支持本地路径):<code>WHISPER_MODEL=/Users/&lt;你&gt;/voice-helper/models/whisper-large-v3-mlx</code>。<code>models/</code> 已 gitignore。</p>
+  <p>SenseVoice 走 ModelScope(国内快),一般不受影响——<b>中文场景直接用 SenseVoice 引擎通常更省事</b>。</p>
 </div>
 
 <h2 id="plan">⑩ 规划中:热词偏置(技术词准确度)</h2>
