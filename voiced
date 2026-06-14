@@ -1,4 +1,4 @@
 #!/bin/bash
 # Launcher for the push-to-talk voice daemon.
-DIR="$HOME/voice-claude"
+DIR="$HOME/voice-helper"
 exec "$DIR/.venv/bin/python" "$DIR/voiced.py" "$@"

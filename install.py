@@ -62,7 +62,7 @@ def ensure_config():
 _PLIST = """<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
-  <key>Label</key><string>com.voice.dictation</string>
+  <key>Label</key><string>com.voicehelper.dictation</string>
   <key>ProgramArguments</key><array>
     <string>{py}</string><string>{script}</string>
   </array>
@@ -75,7 +75,7 @@ _PLIST = """<?xml version="1.0" encoding="UTF-8"?>
 
 
 def autostart_mac(start_now: bool):
-    plist = Path.home() / "Library/LaunchAgents/com.voice.dictation.plist"
+    plist = Path.home() / "Library/LaunchAgents/com.voicehelper.dictation.plist"
     plist.parent.mkdir(parents=True, exist_ok=True)
     plist.write_text(_PLIST.format(py=VPY, script=HERE / "voiced.py", log=HERE / "voiced.log"))
     subprocess.run(["launchctl", "unload", str(plist)],
@@ -92,7 +92,7 @@ def autostart_windows(start_now: bool):
     startup.mkdir(parents=True, exist_ok=True)
     pyw = VPYW if VPYW.exists() else VPY
     target = HERE / "voiced.py"
-    vbs = startup / "voice-dictation.vbs"
+    vbs = startup / "voice-helper.vbs"
     # window style 0 = hidden, so no console window at login
     vbs.write_text(
         'Set s = CreateObject("Wscript.Shell")\r\n'

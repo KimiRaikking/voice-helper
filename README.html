@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🎙️ Voice — 全局语音输入工具</title>
+<title>🎙️ Voice Helper — 全局语音输入工具</title>
 <style>
   :root {
     --bg: #0f1115; --card: #171a21; --fg: #e6e8ec; --muted: #9aa3b2;
@@ -64,7 +64,7 @@
 <div class="wrap">
 
 <header>
-  <h1>🎙️ Voice — 全局语音输入工具</h1>
+  <h1>🎙️ Voice Helper — 全局语音输入工具</h1>
   <p>按住说话,松开即转写并自动插入光标处 · 多引擎可切换(Whisper / SenseVoice) · 全局任意 App 可用</p>
 </header>
 
@@ -95,7 +95,7 @@
 <div class="note warn"><b>例外</b>:密码输入框(macOS 安全键盘机制屏蔽模拟粘贴)、全屏独占键盘的 App 可能用不了。</div>
 
 <h2 id="files">② 目录与文件结构</h2>
-<p>所有东西都在 <code>~/voice-claude/</code>:</p>
+<p>所有东西都在 <code>~/voice-helper/</code>:</p>
 <table>
   <tr><th>路径</th><th>说明</th></tr>
   <tr><td><code>voiced.py</code></td><td>主程序:守护进程 + 菜单栏图标 + 多引擎转写</td></tr>
@@ -189,7 +189,7 @@ launchctl unload ~/Library/LaunchAgents/com.zhanggang.voiced.plist
 launchctl load   ~/Library/LaunchAgents/com.zhanggang.voiced.plist
 
 # 实时看日志
-tail -f ~/voice-claude/voiced.log</code></pre>
+tail -f ~/voice-helper/voiced.log</code></pre>
 
 <h2 id="perm">⑧ 系统权限(首次/换机必做)</h2>
 <p>后台进程需三项权限,授给这个 Python 二进制:</p>
@@ -212,7 +212,7 @@ tail -f ~/voice-claude/voiced.log</code></pre>
   <p><b>输出繁体字?</b> 已用 OpenCC 强制转简体;若仍出现,检查 <code>opencc</code> 是否在 venv 里。</p>
   <p><b>改了 voiced.py 不生效?</b> 需 <code>launchctl kickstart -k ...</code> 重启。</p>
   <p><b>下载 Whisper large-v3 卡在 <code>0.00B</code>?</b> HF 大文件改用了 Xet 后端,某些网络下会卡死。<b>禁用 Xet 走旧通道</b>:</p>
-  <pre><code>HF_HUB_DISABLE_XET=1 ~/voice-claude/.venv/bin/python -c \
+  <pre><code>HF_HUB_DISABLE_XET=1 ~/voice-helper/.venv/bin/python -c \
   "from huggingface_hub import snapshot_download; print(snapshot_download('mlx-community/whisper-large-v3-mlx'))"</code></pre>
   <p>该模型权重文件名为 <code>weights.npz</code>(~3GB)。</p>
 </div>
@@ -233,12 +233,12 @@ tail -f ~/voice-claude/voiced.log</code></pre>
 <pre><code>launchctl unload ~/Library/LaunchAgents/com.zhanggang.voiced.plist
 rm ~/Library/LaunchAgents/com.zhanggang.voiced.plist
 rm ~/.local/bin/voiced ~/.local/bin/dictate
-rm -rf ~/voice-claude
+rm -rf ~/voice-helper
 # 可选:删模型缓存
 # rm -rf ~/.cache/huggingface/hub/models--mlx-community--whisper-*
 # rm -rf ~/.cache/modelscope/hub/models/iic/SenseVoiceSmall</code></pre>
 
-<footer>Voice 语音输入工具 · 本机文档 · ~/voice-claude/README.html · 更新于 2026-06</footer>
+<footer>Voice Helper 语音输入工具 · 本机文档 · ~/voice-helper/README.html · 更新于 2026-06</footer>
 
 </div>
 </body>

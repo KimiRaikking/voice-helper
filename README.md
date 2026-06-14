@@ -1,4 +1,4 @@
-# 🎙️ Voice — 全局语音输入工具
+# 🎙️ Voice Helper — 全局语音输入工具
 
 一个常驻的「按住说话」语音输入工具:在**任意 App** 的输入框里,按住快捷键说话,松开后自动把语音转成文字插入光标处。支持**多识别引擎可切换**(Whisper / SenseVoice),**跨平台**(macOS / Windows)。
 
@@ -11,8 +11,8 @@
 任意 Python 3.10+ 即可,安装脚本会自建 `.venv` 并装好对应平台的依赖、配置开机自启。
 
 ```bash
-git clone <仓库地址> voice-claude
-cd voice-claude
+git clone <仓库地址> voice-helper
+cd voice-helper
 python install.py          # Windows 用 py install.py 或 python install.py
 ```
 
@@ -50,7 +50,7 @@ python install.py          # Windows 用 py install.py 或 python install.py
 
 ## 二、目录与文件结构
 
-所有东西都在 `~/voice-claude/`:
+所有东西都在 `~/voice-helper/`:
 
 | 路径 | 说明 |
 |------|------|
@@ -62,8 +62,8 @@ python install.py          # Windows 用 py install.py 或 python install.py
 | `requirements-*.txt` | 分平台依赖清单(common / macos / windows / sensevoice) |
 | `run.bat` / `run-debug.bat` | Windows 手动启动 / 调试启动 |
 | `dictate.py` | 备用:一次性录音 → 转写 → 复制到剪贴板(不常驻) |
-| `~/voice-claude/.venv/` | Python 虚拟环境(所有依赖装在这里) |
-| `~/voice-claude/voiced.log` | 运行日志 |
+| `~/voice-helper/.venv/` | Python 虚拟环境(所有依赖装在这里) |
+| `~/voice-helper/voiced.log` | 运行日志 |
 | `~/Library/LaunchAgents/com.zhanggang.voiced.plist` | 开机自启配置(LaunchAgent) |
 
 **技术栈**
@@ -189,7 +189,7 @@ launchctl unload ~/Library/LaunchAgents/com.zhanggang.voiced.plist
 launchctl load   ~/Library/LaunchAgents/com.zhanggang.voiced.plist
 
 # 实时看日志
-tail -f ~/voice-claude/voiced.log
+tail -f ~/voice-helper/voiced.log
 ```
 
 ---
@@ -237,7 +237,7 @@ launchctl kickstart -k gui/$(id -u)/com.zhanggang.voiced
 **下载 Whisper large-v3 一直卡在 `0.00B`?**
 HF 大文件已改用 Xet 后端,某些网络下会卡死。**禁用 Xet 走旧通道**即可:
 ```bash
-HF_HUB_DISABLE_XET=1 ~/voice-claude/.venv/bin/python -c \
+HF_HUB_DISABLE_XET=1 ~/voice-helper/.venv/bin/python -c \
   "from huggingface_hub import snapshot_download; print(snapshot_download('mlx-community/whisper-large-v3-mlx'))"
 ```
 该模型权重文件名为 `weights.npz`(~3GB),下完后 `~/.cache/huggingface/.../snapshots/` 里应能看到它。
@@ -262,7 +262,7 @@ HF_HUB_DISABLE_XET=1 ~/voice-claude/.venv/bin/python -c \
 launchctl unload ~/Library/LaunchAgents/com.zhanggang.voiced.plist
 rm ~/Library/LaunchAgents/com.zhanggang.voiced.plist
 rm ~/.local/bin/voiced ~/.local/bin/dictate
-rm -rf ~/voice-claude
+rm -rf ~/voice-helper
 # 可选:删模型缓存
 # rm -rf ~/.cache/huggingface/hub/models--mlx-community--whisper-*
 # rm -rf ~/.cache/modelscope/hub/models/iic/SenseVoiceSmall
