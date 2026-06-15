@@ -1,6 +1,16 @@
 # 🎙️ Voice Helper — 全局语音输入工具
 
-一个常驻的「按住说话」语音输入工具:在**任意 App** 的输入框里,按住快捷键说话,松开后自动把语音转成文字插入光标处。支持**多识别引擎可切换**(Whisper / SenseVoice),**跨平台**(macOS / Windows)。
+![platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-blue)
+![python](https://img.shields.io/badge/python-3.10%2B-3776ab)
+![engines](https://img.shields.io/badge/engines-Whisper%20%7C%20SenseVoice%20%7C%20Paraformer-9cf)
+![license](https://img.shields.io/badge/license-MIT-green)
+
+> **Local, cross-platform push-to-talk dictation.** Hold a hotkey, speak, release —
+> your speech is transcribed **on-device** and pasted into whatever field has focus,
+> in any app. Three switchable engines (Whisper / SenseVoice / Paraformer with live
+> hotword biasing). Runs on macOS (Apple GPU) and Windows (CPU). No cloud, no cost.
+
+一个常驻的「按住说话」语音输入工具:在**任意 App** 的输入框里,按住快捷键说话,松开后自动把语音转成文字插入光标处。支持**多识别引擎可切换**(Whisper / SenseVoice / Paraformer),**跨平台**(macOS / Windows),**纯本地、零成本**。
 
 > 为 Claude Code CLI 的语音输入而搭建,但对所有 App 通用。
 
