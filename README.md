@@ -273,7 +273,73 @@ bash voicectl.sh hot 时延 推理   # 加热词(Paraformer,即时生效)
 
 ---
 
-## 九、常见问题
+## 九、常见问题 / 诊断排查
+
+### ⚡ 一键诊断(出问题先跑这个)
+
+Git Bash,仓库目录:
+
+```bash
+bash voicectl.sh doctor
+```
+
+输出 8 行(`200`=通,`000`=连不上)+ 日志最后报错:
+
+```
+1 venv环境 有/无
+2 正在运行 是/否
+3 当前引擎 ...
+4 中文模型SenseVoice 有/无
+5 热词模型Paraformer 有/无
+6 连GitHub 返回 200/000
+7 连魔搭ModelScope 返回 200/000
+8 连抱抱脸HuggingFace 返回 200/000
+```
+
+### 🔍 手动逐项检查
+
+```bash
+# venv 是否装好(应输出 python.exe 路径,不报 No such file)
+ls ~/voice-helper/.venv/Scripts/python.exe
+
+# SenseVoice 模型是否真的下好(总大小应约 900M~1G,且有 model.pt)
+du -sh ~/.cache/modelscope/hub/models/iic/SenseVoiceSmall
+ls -lh ~/.cache/modelscope/hub/models/iic/SenseVoiceSmall
+
+# Paraformer 模型是否下好
+du -sh ~/.cache/modelscope/hub/models/iic/speech_seaco_paraformer*
+
+# 是否在运行 + 日志末尾
+bash voicectl.sh status
+tail -n 30 ~/voice-helper/voiced.log
+
+# 网络连通性(200=通,000=连不上/被代理拦)
+curl -s -m 8 -o /dev/null -w "%{http_code}\n" https://www.modelscope.cn
+curl -s -m 8 -o /dev/null -w "%{http_code}\n" https://huggingface.co
+```
+
+### 🏢 公司网络:连接全 000 / `authentication required`
+
+需要走**带认证的代理**。但注意:
+
+- **日常用 SenseVoice 不需要网络** —— 模型一旦下好(上面 `du` 显示约 900M),就纯本地运行,断网也能用。直接按住热键说话测试即可。
+- **让 SenseVoice 彻底离线**(避免加载时碰网):`voice.env` 里指向本地目录(把 `<用户名>` 换成你的):
+  ```
+  SENSEVOICE_MODEL=C:\Users\<用户名>\.cache\modelscope\hub\models\iic\SenseVoiceSmall
+  ```
+  然后 `bash voicectl.sh restart`。
+- **需要下模型 / git 时配代理**(把 `用户:密码@IP:端口` 换成公司代理):
+  ```bash
+  # git
+  git config --global http.proxy http://用户:密码@IP:端口
+  # python / curl(当前 Git Bash 会话有效)
+  export HTTPS_PROXY=http://用户:密码@IP:端口
+  export HTTP_PROXY=http://用户:密码@IP:端口
+  # 之后重下模型或重启
+  bash voicectl.sh restart
+  ```
+
+### 常见现象
 
 **(Windows)怎么确认它装好/生效了?**
 仓库目录里**双击 `status.bat`**,会显示:① 进程是否在跑(`running, PID …` / `NOT running`)② `voiced.log` 末尾(能看到模型加载或报错)。
