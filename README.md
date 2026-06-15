@@ -328,16 +328,20 @@ curl -s -m 8 -o /dev/null -w "%{http_code}\n" https://huggingface.co
   SENSEVOICE_MODEL=C:\Users\<用户名>\.cache\modelscope\hub\models\iic\SenseVoiceSmall
   ```
   然后 `bash voicectl.sh restart`。
-- **需要下模型 / git 时配代理**(把 `用户:密码@IP:端口` 换成公司代理):
+- **下模型需要代理 —— 如果 git 能用,直接复用 git 的代理**(最省事,不用找地址):
   ```bash
-  # git
-  git config --global http.proxy http://用户:密码@IP:端口
-  # python / curl(当前 Git Bash 会话有效)
-  export HTTPS_PROXY=http://用户:密码@IP:端口
-  export HTTP_PROXY=http://用户:密码@IP:端口
-  # 之后重下模型或重启
+  # 看 git 现在用的代理
+  git config --global --get http.proxy
+  # 把上面输出的值填到下面两行(当前 Git Bash 会话有效)
+  export HTTPS_PROXY=<上面那个值>
+  export HTTP_PROXY=<上面那个值>
+  # 然后预下载 SenseVoice 模型
+  ~/voice-helper/.venv/Scripts/python -c "from funasr import AutoModel; AutoModel(model='iic/SenseVoiceSmall', hub='ms', disable_update=True); print('OK')"
+  # 下好后重启
   bash voicectl.sh restart
   ```
+  > git 没配代理(`git config` 那条没输出)时,需手动填公司代理:`http://用户:密码@IP:端口`。
+- **没有可用代理?从已下好的机器拷贝模型**:把源机器(如你的 Mac)上 `~/.cache/modelscope/hub/models/iic/SenseVoiceSmall` 整个文件夹,拷到本机相同路径 `C:\Users\<用户名>\.cache\modelscope\hub\models\iic\SenseVoiceSmall`,即可离线用。
 
 ### 常见现象
 

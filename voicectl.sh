@@ -52,8 +52,9 @@ case "${1:-}" in
     [ -f "$DIR/.venv/Scripts/python.exe" ] && echo "1 venv环境 有" || echo "1 venv环境 无"
     echo "2 正在运行 ${run:-否}"
     echo "3 当前引擎 ${eng:-空}"
-    [ -d "$ms/SenseVoiceSmall" ] && echo "4 中文模型SenseVoice 有" || echo "4 中文模型SenseVoice 无"
-    ls -d "$ms"/*paraformer* >/dev/null 2>&1 && echo "5 热词模型Paraformer 有" || echo "5 热词模型Paraformer 无"
+    # 检查真实权重文件(不只看目录是否存在,空目录=没下好)
+    ls "$ms/SenseVoiceSmall/"*.pt >/dev/null 2>&1 && echo "4 中文模型SenseVoice 有" || echo "4 中文模型SenseVoice 无(空/缺)"
+    ls "$ms"/*paraformer*/*.pt >/dev/null 2>&1 && echo "5 热词模型Paraformer 有" || echo "5 热词模型Paraformer 无(空/缺)"
     echo "6 连GitHub 返回 $(code https://github.com)"
     echo "7 连魔搭ModelScope 返回 $(code https://www.modelscope.cn)"
     echo "8 连抱抱脸HuggingFace 返回 $(code https://huggingface.co)"
