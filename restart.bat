@@ -1,6 +1,15 @@
 @echo off
-REM 重启 voiced(停止 + 重新启动)
-call "%~dp0stop.bat"
+setlocal
+set "DIR=%~dp0"
+call "%DIR%stop.bat"
 timeout /t 1 /nobreak >/dev/null
-start "" "%~dp0.venv\Scripts\pythonw.exe" "%~dp0voiced.py"
-echo voiced 已重启 — 托盘图标在右下角(点 ^ 展开)。
+set "PYW=%DIR%.venv\Scripts\pythonw.exe"
+if not exist "%PYW%" set "PYW=%DIR%.venv\Scripts\python.exe"
+if not exist "%PYW%" (
+  echo [ERROR] venv python not found under "%DIR%.venv\Scripts\"
+  echo Run:  python install.py
+  pause
+  exit /b 1
+)
+start "" "%PYW%" "%DIR%voiced.py"
+echo Restarted. Tray icon at bottom-right.

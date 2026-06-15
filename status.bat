@@ -1,6 +1,12 @@
 @echo off
-echo === voiced 是否在运行 ===
+setlocal
+set "DIR=%~dp0"
+echo === paths ===
+echo repo: "%DIR%"
+if exist "%DIR%.venv\Scripts\pythonw.exe" (echo venv pythonw: FOUND) else (echo venv pythonw: MISSING - run: python install.py)
+echo.
+echo === running? ===
 powershell -NoProfile -Command "$p = Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*voiced.py*' }; if ($p) { $p | ForEach-Object { 'running, PID ' + $_.ProcessId } } else { 'NOT running' }"
 echo.
-echo === 日志末尾(看是否加载成功/有无报错) ===
-if exist "%~dp0voiced.log" (powershell -NoProfile -Command "Get-Content '%~dp0voiced.log' -Tail 20") else (echo (暂无 voiced.log))
+echo === voiced.log (tail) ===
+if exist "%DIR%voiced.log" (powershell -NoProfile -Command "Get-Content '%DIR%voiced.log' -Tail 20") else (echo no voiced.log yet)

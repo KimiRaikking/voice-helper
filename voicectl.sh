@@ -10,12 +10,16 @@ set -u
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PYW="$DIR/.venv/Scripts/pythonw.exe"   # 无控制台
 PY="$DIR/.venv/Scripts/python.exe"     # 有控制台
+[ -f "$PYW" ] || PYW="$PY"             # 回退到 python.exe
 
 # 单引号包住 PowerShell,防止 bash 展开 $_
 PS_FIND='Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like "*voiced.py*" }'
 
 case "${1:-}" in
   status)
+    echo "=== 路径检查 ==="
+    echo "repo: $DIR"
+    [ -f "$DIR/.venv/Scripts/python.exe" ] && echo "venv python: 有" || echo "venv python: 缺(请先跑 python install.py)"
     echo "=== voiced 是否在运行 ==="
     powershell -NoProfile -Command "\$p = $PS_FIND; if (\$p) { \$p | ForEach-Object { 'running, PID ' + \$_.ProcessId } } else { 'NOT running' }"
     echo "=== 日志末尾 ==="

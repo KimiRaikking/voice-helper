@@ -1,3 +1,13 @@
 @echo off
-REM 调试用:显示控制台输出,方便看报错。Ctrl+C 退出。
-"%~dp0.venv\Scripts\python.exe" "%~dp0voiced.py"
+setlocal
+set "DIR=%~dp0"
+set "PY=%DIR%.venv\Scripts\python.exe"
+if not exist "%PY%" (
+  echo [ERROR] venv python not found: "%PY%"
+  echo Run:  python install.py
+  pause
+  exit /b 1
+)
+echo Running in foreground (Ctrl+C to quit)...
+"%PY%" "%DIR%voiced.py"
+pause
