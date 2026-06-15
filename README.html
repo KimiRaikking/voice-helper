@@ -140,7 +140,7 @@ python install.py          # Windows 也可用 py install.py</code></pre>
   <tr><th>引擎</th><th>VOICE_ENGINE</th><th>特点</th><th>适用</th></tr>
   <tr><td><b>Whisper</b></td><td><code>whisper</code>(默认)</td><td>多语言,中英混说友好</td><td>通用 / 英文多</td></tr>
   <tr><td><b>SenseVoice</b></td><td><code>sensevoice</code></td><td>达摩院,中文/方言优化,带标点,极快</td><td>中文为主</td></tr>
-  <tr><td><b>Paraformer</b></td><td><code>paraformer</code></td><td>SeACo-Paraformer,<b>支持热词偏置</b>(动态喂词治同音错)</td><td>中文 + 术语多</td></tr>
+  <tr><td><b>Paraformer</b></td><td><code>paraformer</code></td><td>SeACo-Paraformer,中文最准 + <b>热词偏置</b> + <b>标点</b></td><td>中文 + 术语多</td></tr>
 </table>
 <div class="note"><b>准确度</b>:中文「技术同音词」(时延/实验/食言)对通用模型(Whisper/SenseVoice)都难。根治靠 <b>Paraformer 热词偏置</b>(第⑩节)。</div>
 
@@ -284,7 +284,7 @@ addhot                            # 查看当前热词</code></pre>
     <li><code>hotwords.txt</code> 是个人词库,已 gitignore;仓库带起步样例 <code>hotwords.txt.example</code>。</li>
     <li>跨平台通用(Windows 用 <code>python add_hotword.py …</code>)。</li>
   </ul>
-  <b>注</b>:Paraformer 输出<b>不带标点</b>(SenseVoice 带);重术语准确度选 Paraformer,重标点选 SenseVoice。
+  <b>标点</b>:Paraformer 默认用 <code>VOICE_PUNC</code>(ct-punc 模型,<code>download all</code> 会一并下)加标点;不想要就在 voice.env 设 <code>VOICE_PUNC=</code>(留空)。
 </div>
 
 <h2 id="corrections">⑪ 字词自动纠正(所有引擎通用)✅</h2>

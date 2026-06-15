@@ -108,6 +108,9 @@ SENSEVOICE_MODEL = os.environ.get("SENSEVOICE_MODEL", "iic/SenseVoiceSmall")
 PARAFORMER_MODEL = os.environ.get(
     "PARAFORMER_MODEL",
     "iic/speech_seaco_paraformer_large_asr_nat-zh-cn-16k-common-vocab8404-pytorch")
+# Punctuation model for Paraformer (it has none by default). Empty = no punctuation.
+PUNC_MODEL = os.environ.get(
+    "VOICE_PUNC", "iic/punc_ct-transformer_zh-cn-common-vocab272727-pytorch").strip()
 HOTWORD_ENV = (os.environ.get("VOICE_HOTWORD") or "").strip()
 _HERE = os.path.dirname(os.path.abspath(__file__))
 HOTWORDS_FILE = os.path.join(_HERE, "hotwords.txt")
@@ -329,7 +332,10 @@ def _transcribe_paraformer(audio: np.ndarray) -> str:
     global _pf_model
     if _pf_model is None:
         from funasr import AutoModel
-        _pf_model = AutoModel(model=PARAFORMER_MODEL, hub="ms", disable_update=True)
+        init = {"model": PARAFORMER_MODEL, "hub": "ms", "disable_update": True}
+        if PUNC_MODEL:
+            init["punc_model"] = PUNC_MODEL  # adds punctuation (Paraformer has none)
+        _pf_model = AutoModel(**init)
     kwargs = {"input": audio, "cache": {}}
     hot = read_hotwords()
     if hot:

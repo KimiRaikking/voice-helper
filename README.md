@@ -130,7 +130,7 @@ python install.py          # Windows 也可用 py install.py
 |------|----------------|------|------|
 | **Whisper** | `whisper`(默认) | 多语言,中英混说友好 | 通用、英文多 |
 | **SenseVoice** | `sensevoice` | 阿里达摩院,中文/方言优化,带智能标点,非自回归极快 | 中文为主 |
-| **Paraformer** | `paraformer` | SeACo-Paraformer,**支持热词偏置**(动态喂词治同音错) | 中文 + 专业术语多 |
+| **Paraformer** | `paraformer` | SeACo-Paraformer,中文最准 + **热词偏置** + **标点**(VOICE_PUNC) | 中文 + 专业术语多 |
 
 > **关于准确度**:中文「技术同音词」(时延 / 实验 / 食言)对**通用模型**(Whisper / SenseVoice)都是难点——会默认挑最常见的词。真正对症的是 **Paraformer 的热词偏置**:把常错的词喂进去,强制优先匹配(见第⑩节)。
 
@@ -426,7 +426,7 @@ addhot
 - `hotwords.txt` 是**个人词库**,已 gitignore;仓库里带一份起步样例 `hotwords.txt.example`。
 - 跨平台通用(Windows 用 `python add_hotword.py …`)。
 
-> 注:Paraformer 输出**不带标点**(SenseVoice 带);看重术语准确度选 Paraformer,看重标点选 SenseVoice。
+> 标点:Paraformer 默认通过 `VOICE_PUNC`(ct-punc 模型,`download all` 会一并下)加上标点。不想要标点就在 `voice.env` 设 `VOICE_PUNC=`(留空)。
 
 ---
 

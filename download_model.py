@@ -54,7 +54,13 @@ def dl_sensevoice():
 
 
 def dl_paraformer():
-    return _retry("Paraformer", lambda: _ms(voiced.PARAFORMER_MODEL))
+    def _go():
+        from funasr import AutoModel
+        init = {"model": voiced.PARAFORMER_MODEL, "hub": "ms", "disable_update": True}
+        if voiced.PUNC_MODEL:
+            init["punc_model"] = voiced.PUNC_MODEL  # download punctuation model too
+        AutoModel(**init)
+    return _retry("Paraformer(+标点)", _go)
 
 
 def dl_whisper():
