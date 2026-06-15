@@ -228,6 +228,17 @@ type voiced.log
 
 > 调试时直接跑 `run-debug.bat`(显示控制台,能看到实时报错),Ctrl+C 退出。
 
+**在 Git Bash 里用** —— 用 `voicectl.sh`(等价于上面的 .bat):
+
+```bash
+bash voicectl.sh status     # 是否在跑 + 日志末尾
+bash voicectl.sh restart    # 重启
+bash voicectl.sh stop       # 停止
+bash voicectl.sh start      # 启动
+bash voicectl.sh log        # 实时跟踪日志(Ctrl+C 退出)
+bash voicectl.sh hot 时延 推理   # 加热词(Paraformer,即时生效)
+```
+
 ---
 
 ## 八、系统权限
