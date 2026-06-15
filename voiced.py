@@ -67,7 +67,35 @@ def _apply_proxy():
             os.environ.setdefault(k, p)
 
 
+def _apply_tls():
+    """Corporate proxies often do TLS interception with a self-signed root CA,
+    which breaks Python downloads ('self signed certificate in certificate chain').
+    VOICE_CA = path to the corporate CA bundle (reuse git's: `git config --get
+    http.sslCAInfo`). VOICE_INSECURE=1 = skip verification (last resort)."""
+    ca = (os.environ.get("VOICE_CA") or "").strip()
+    if ca and os.path.exists(ca):
+        for k in ("REQUESTS_CA_BUNDLE", "SSL_CERT_FILE", "CURL_CA_BUNDLE"):
+            os.environ.setdefault(k, ca)
+    elif (os.environ.get("VOICE_INSECURE") or "") == "1":
+        try:
+            import ssl
+            ssl._create_default_https_context = ssl._create_unverified_context
+            import requests
+            import urllib3
+            urllib3.disable_warnings()
+            _orig = requests.Session.request
+
+            def _no_verify(self, *a, **k):
+                k.setdefault("verify", False)
+                return _orig(self, *a, **k)
+
+            requests.Session.request = _no_verify
+        except Exception:
+            pass
+
+
 _apply_proxy()
+_apply_tls()
 
 SAMPLE_RATE = 16000
 ENGINE = os.environ.get("VOICE_ENGINE", "whisper").lower()  # whisper | sensevoice | paraformer

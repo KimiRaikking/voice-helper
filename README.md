@@ -340,7 +340,17 @@ curl -s -m 8 -o /dev/null -w "%{http_code}\n" https://huggingface.co
   bash voicectl.sh restart
   ```
   > `download all` 可一次下 SenseVoice + Paraformer 两个。
-- **没有可用代理?从已下好的机器拷贝**:把源机器(如你的 Mac)上 `~/.cache/modelscope/hub/models/iic/SenseVoiceSmall` 整个文件夹,拷到本机相同路径 `C:\Users\<用户名>\.cache\modelscope\hub\models\iic\SenseVoiceSmall`,即可离线用。
+- **报 `self signed certificate in certificate chain`**(代理做 TLS 拦截):需信任公司根证书。
+  ```bash
+  # 1) 看 git 用的证书路径(复制输出)
+  git config --global --get http.sslCAInfo
+  # 2) 在 voice.env 加一行(值换成上一步路径):
+  #    VOICE_CA=C:\path\to\company-ca.pem
+  # 3) 重新下载
+  bash voicectl.sh download
+  ```
+  > 第 1 步没输出(git 用的是 `http.sslVerify=false`)且实在拿不到证书时,应急在 voice.env 写 `VOICE_INSECURE=1`(跳过校验,不安全,仅内网临时用)。
+- **没有可用代理/证书?从已下好的机器拷贝**:把源机器(如你的 Mac)上 `~/.cache/modelscope/hub/models/iic/SenseVoiceSmall` 整个文件夹,拷到本机相同路径 `C:\Users\<用户名>\.cache\modelscope\hub\models\iic\SenseVoiceSmall`,即可离线用。
 
 ### 常见现象
 
