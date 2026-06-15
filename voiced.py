@@ -65,6 +65,10 @@ def _apply_proxy():
     if p:
         for k in ("HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy"):
             os.environ.setdefault(k, p)
+    # HuggingFace mirror / internal endpoint for Whisper models (ModelScope unaffected).
+    hf = (os.environ.get("VOICE_HF_ENDPOINT") or "").strip()
+    if hf:
+        os.environ.setdefault("HF_ENDPOINT", hf)
 
 
 def _apply_tls():
