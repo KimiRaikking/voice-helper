@@ -17,3 +17,6 @@ models/
 
 # personal hotword list (starter committed as hotwords.txt.example)
 hotwords.txt
+
+# personal corrections (starter committed as corrections.txt.example)
+corrections.txt

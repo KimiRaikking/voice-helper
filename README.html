@@ -58,7 +58,7 @@
   <a href="#start">〇 快速开始</a><a href="#what">① 能做什么</a><a href="#files">② 文件结构</a>
   <a href="#use">③ 日常使用</a><a href="#engine">④ 识别引擎</a><a href="#config">⑤ 配置项</a>
   <a href="#edit">⑥ 修改配置</a><a href="#autostart">⑦ 开机自启</a><a href="#perm">⑧ 系统权限</a>
-  <a href="#faq">⑨ 常见问题</a><a href="#plan">⑩ 规划:热词</a><a href="#uninstall">⑪ 卸载</a>
+  <a href="#faq">⑨ 常见问题</a><a href="#plan">⑩ 热词</a><a href="#corrections">⑪ 自动纠正</a><a href="#uninstall">⑫ 卸载</a>
 </div>
 
 <h2 id="start">〇、快速开始(跨平台,Git 仓库)</h2>
@@ -287,7 +287,18 @@ addhot                            # 查看当前热词</code></pre>
   <b>注</b>:Paraformer 输出<b>不带标点</b>(SenseVoice 带);重术语准确度选 Paraformer,重标点选 SenseVoice。
 </div>
 
-<h2 id="uninstall">⑪ 卸载</h2>
+<h2 id="corrections">⑪ 字词自动纠正(所有引擎通用)✅</h2>
+<div class="note">
+  转写后套一张<b>纠正表</b>做替换,适合 AI agent:某词总被转错,登记一条规则,以后<b>自动纠正</b>。对 SenseVoice / Whisper / Paraformer <b>都生效</b>。规则在 <code>corrections.txt</code>(每行 <code>错词=&gt;对词</code>),<b>每次转写实时读取,即改即生效</b>。
+  <pre><code>addfix 食盐 时延                 # 加规则(任意目录)
+python ~/voice-helper/add_fix.py 食盐 时延   # 等价
+addfix                          # 查看所有规则
+# Windows Git Bash:
+bash voicectl.sh fix 食盐 时延</code></pre>
+  长词优先匹配避免误伤;<code>corrections.txt</code> 个人表已 gitignore(样例 <code>corrections.txt.example</code>)。三层叠加最稳:Paraformer 热词(转写时)→ 自动纠正表(转写后)→ 简繁转换。
+</div>
+
+<h2 id="uninstall">⑫ 卸载</h2>
 <h4><span class="os mac">macOS</span></h4>
 <pre><code>launchctl unload ~/Library/LaunchAgents/com.voicehelper.dictation.plist
 rm ~/Library/LaunchAgents/com.voicehelper.dictation.plist

@@ -1,0 +1,3 @@
+#!/bin/bash
+DIR="$HOME/voice-helper"
+exec "$DIR/.venv/bin/python" "$DIR/add_fix.py" "$@"

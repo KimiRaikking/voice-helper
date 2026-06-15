@@ -109,7 +109,9 @@ PARAFORMER_MODEL = os.environ.get(
     "PARAFORMER_MODEL",
     "iic/speech_seaco_paraformer_large_asr_nat-zh-cn-16k-common-vocab8404-pytorch")
 HOTWORD_ENV = (os.environ.get("VOICE_HOTWORD") or "").strip()
-HOTWORDS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "hotwords.txt")
+_HERE = os.path.dirname(os.path.abspath(__file__))
+HOTWORDS_FILE = os.path.join(_HERE, "hotwords.txt")
+CORRECTIONS_FILE = os.path.join(_HERE, "corrections.txt")
 LANG = os.environ.get("VOICE_LANG") or None
 PROMPT = os.environ.get("VOICE_PROMPT") or None
 AUTO_PASTE = "VOICE_NO_PASTE" not in os.environ
@@ -339,6 +341,36 @@ def _transcribe_paraformer(audio: np.ndarray) -> str:
     return res[0].get("text", "").replace(" ", "").strip()
 
 
+def read_corrections():
+    """Parse corrections.txt into [(wrong, right)], re-read each call so edits
+    take effect immediately. Line format: 错词=>对词  (# comments ignored)."""
+    pairs = []
+    try:
+        with open(CORRECTIONS_FILE, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#") or "=>" not in line:
+                    continue
+                wrong, right = line.split("=>", 1)
+                wrong, right = wrong.strip(), right.strip()
+                if wrong:
+                    pairs.append((wrong, right))
+    except FileNotFoundError:
+        pass
+    # apply longer keys first so specific phrases win over their substrings
+    pairs.sort(key=lambda p: len(p[0]), reverse=True)
+    return pairs
+
+
+def apply_corrections(text: str) -> str:
+    if not text:
+        return text
+    for wrong, right in read_corrections():
+        if wrong in text:
+            text = text.replace(wrong, right)
+    return text
+
+
 def transcribe(audio: np.ndarray) -> str:
     if ENGINE == "sensevoice":
         text = _transcribe_sensevoice(audio)
@@ -346,7 +378,7 @@ def transcribe(audio: np.ndarray) -> str:
         text = _transcribe_paraformer(audio)
     else:
         text = _transcribe_whisper(audio)
-    return _to_simplified(text)
+    return apply_corrections(_to_simplified(text))
 
 
 # --- paste + turn handling -----------------------------------------------------

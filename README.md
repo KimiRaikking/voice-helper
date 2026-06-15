@@ -430,7 +430,30 @@ addhot
 
 ---
 
-## 十一、卸载
+## 十一、字词自动纠正(所有引擎通用)✅
+
+转写完成后,套用一张**纠正表**做替换——适合给 AI agent 用:某些词总被转错,登记一条规则,以后**自动纠正**。和热词互补,**对 SenseVoice / Whisper / Paraformer 都生效**。
+
+规则在 `corrections.txt`,每行 `错词=>对词`,**每次转写实时读取,即改即生效**(无需重启)。工作流:
+
+> agent 场景里发现「时延」老被转成「食盐」→ 登记一条 → 以后自动纠正。
+
+```bash
+# 加规则(任意目录)
+addfix 食盐 时延
+# 或
+python ~/voice-helper/add_fix.py 食盐 时延
+# 查看所有规则
+addfix
+```
+
+- 在 Windows Git Bash:`bash voicectl.sh fix 食盐 时延`。
+- 长词优先匹配,避免误伤子串;`corrections.txt` 是个人表,已 gitignore(样例 `corrections.txt.example`)。
+- 三层叠加最稳:**Paraformer 热词**(转写时偏置)→ **自动纠正表**(转写后兜底)→ 简繁转换。
+
+---
+
+## 十二、卸载
 
 ### macOS
 

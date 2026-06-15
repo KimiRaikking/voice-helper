@@ -43,6 +43,10 @@ case "${1:-}" in
     shift
     "$PY" "$DIR/add_hotword.py" "$@"
     ;;
+  fix)
+    shift
+    "$PY" "$DIR/add_fix.py" "$@"   # 加自动纠正规则: 错词 对词
+    ;;
   download)
     shift
     "$PY" "$DIR/download_model.py" "$@"   # 走 voice.env 里的 VOICE_PROXY
@@ -68,6 +72,6 @@ case "${1:-}" in
     echo "(返回200=通,000=连不上)"
     ;;
   *)
-    echo "用法: bash voicectl.sh {status|start|stop|restart|log|hot <词...>|doctor|download [all]}"
+    echo "用法: bash voicectl.sh {status|start|stop|restart|log|doctor|download [all]|hot <词...>|fix <错> <对>}"
     ;;
 esac

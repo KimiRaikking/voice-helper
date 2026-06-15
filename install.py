@@ -60,6 +60,7 @@ def _seed(name: str, desc: str):
 def ensure_config():
     _seed("voice.env", "edit it to change engine/hotkey/language")
     _seed("hotwords.txt", "Paraformer hotwords; add words with add_hotword.py")
+    _seed("corrections.txt", "auto-correct map (错=>对); add with add_fix.py")
 
 
 # --- autostart -----------------------------------------------------------------
