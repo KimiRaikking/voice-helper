@@ -180,13 +180,11 @@ open -e ~/voice-helper/voice.env     # 或任意编辑器
 launchctl kickstart -k gui/$(id -u)/com.voicehelper.dictation   # 重启生效
 ```
 
-**Windows**(在仓库目录)
+**Windows**(在仓库目录,双击或命令行运行 `.bat` 即可)
 
 ```bat
 notepad voice.env
-:: 重启:先停掉再启动
-powershell -Command "Get-CimInstance Win32_Process | ? { $_.CommandLine -like '*voiced.py*' } | %% { Stop-Process -Id $_.ProcessId -Force }"
-run.bat
+restart.bat      :: 重启生效(= 停止 + 重新启动)
 ```
 
 ---
@@ -207,15 +205,19 @@ tail -f ~/voice-helper/voiced.log                                   # 看日志
 
 ### Windows(启动文件夹 VBS)
 
-`install.py` 在启动文件夹放了 `voice-helper.vbs`,用 `pythonw` 隐藏窗口运行,登录即起。
+`install.py` 在启动文件夹放了 `voice-helper.vbs`,用 `pythonw` 隐藏窗口运行,登录即起。仓库带了几个一键脚本(双击即可):
+
+| 脚本 | 作用 |
+|------|------|
+| `status.bat` | **查看是否在运行 + 日志末尾**(确认有没有生效用这个) |
+| `restart.bat` | 重启(停止 + 启动) |
+| `stop.bat` | 停止 |
+| `run.bat` | 手动启动 |
+| `run-debug.bat` | 前台调试(显示控制台、看实时报错) |
 
 ```bat
-:: 是否在跑
-tasklist | findstr pythonw
-
-:: 重启:停掉 voiced 再用 run.bat 启动
-powershell -Command "Get-CimInstance Win32_Process | ? { $_.CommandLine -like '*voiced.py*' } | %% { Stop-Process -Id $_.ProcessId -Force }"
-run.bat
+status.bat       :: 是否在跑 + 日志
+restart.bat      :: 重启
 
 :: 关闭自启:删掉启动文件夹里的 vbs
 del "%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\voice-helper.vbs"
@@ -252,10 +254,15 @@ type voiced.log
 
 ## 九、常见问题
 
+**(Windows)怎么确认它装好/生效了?**
+仓库目录里**双击 `status.bat`**,会显示:① 进程是否在跑(`running, PID …` / `NOT running`)② `voiced.log` 末尾(能看到模型加载或报错)。
+其次:看**右下角系统托盘**有没有彩色圆点图标(被折叠就点 `^` 展开)。最后:把光标放输入框,**按住右 Alt 说句话**——出字就是生效了。
+- 显示 `NOT running` → 双击 `run.bat` 手动启动;要看报错用 `run-debug.bat`(前台控制台)。
+
 **按了没反应 / 录音失效?**
 - **macOS** 日志报 `PaErrorCode -9986`:音频设备变了(插拔耳机、切换输出)导致 PortAudio 缓存失效。重启服务:
   `launchctl kickstart -k gui/$(id -u)/com.voicehelper.dictation`
-- **Windows**:同理切换音频设备后重启服务(停掉 `voiced.py` 进程 + `run.bat`)。
+- **Windows**:切换音频设备后,双击 **`restart.bat`** 重启。
 - 还不行 → 看「权限」:mac 缺输入监控/辅助功能;Windows 缺麦克风权限。
 
 **状态图标看不到?**
@@ -341,9 +348,9 @@ rm -rf ~/voice-helper
 
 ```bat
 :: 停进程 + 删自启 + 删目录
-powershell -Command "Get-CimInstance Win32_Process | ? { $_.CommandLine -like '*voiced.py*' } | %% { Stop-Process -Id $_.ProcessId -Force }"
+stop.bat
 del "%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\voice-helper.vbs"
-rmdir /s /q "%USERPROFILE%\voice-helper"
+cd %USERPROFILE% && rmdir /s /q "%USERPROFILE%\voice-helper"
 :: 可选:删模型缓存
 :: rmdir /s /q "%USERPROFILE%\.cache\modelscope\hub\models\iic\SenseVoiceSmall"
 ```
