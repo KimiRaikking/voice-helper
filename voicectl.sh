@@ -43,7 +43,26 @@ case "${1:-}" in
     shift
     "$PY" "$DIR/add_hotword.py" "$@"
     ;;
+  doctor)
+    code() { curl -s -m 8 -o /dev/null -w "%{http_code}" "$1" 2>/dev/null || echo 000; }
+    eng=$(grep -E '^VOICE_ENGINE=' "$DIR/voice.env" 2>/dev/null | head -1 | cut -d= -f2)
+    run=$(powershell -NoProfile -Command "if (Get-CimInstance Win32_Process | Where-Object { \$_.CommandLine -like '*voiced.py*' }) {'是'} else {'否'}" 2>/dev/null)
+    ms="$HOME/.cache/modelscope/hub/models/iic"
+    echo "===== 诊断结果 ====="
+    [ -f "$DIR/.venv/Scripts/python.exe" ] && echo "1 venv环境 有" || echo "1 venv环境 无"
+    echo "2 正在运行 ${run:-否}"
+    echo "3 当前引擎 ${eng:-空}"
+    [ -d "$ms/SenseVoiceSmall" ] && echo "4 中文模型SenseVoice 有" || echo "4 中文模型SenseVoice 无"
+    ls -d "$ms"/*paraformer* >/dev/null 2>&1 && echo "5 热词模型Paraformer 有" || echo "5 热词模型Paraformer 无"
+    echo "6 连GitHub 返回 $(code https://github.com)"
+    echo "7 连魔搭ModelScope 返回 $(code https://www.modelscope.cn)"
+    echo "8 连抱抱脸HuggingFace 返回 $(code https://huggingface.co)"
+    echo "===== 日志最后报错 ====="
+    grep -iE "error|traceback|cannot|refused|timed out|timeout|connection|no module" \
+      "$DIR/voiced.log" 2>/dev/null | tail -3 || echo "无"
+    echo "(返回200=通,000=连不上)"
+    ;;
   *)
-    echo "用法: bash voicectl.sh {status|start|stop|restart|log|hot <词...>}"
+    echo "用法: bash voicectl.sh {status|start|stop|restart|log|hot <词...>|doctor}"
     ;;
 esac
