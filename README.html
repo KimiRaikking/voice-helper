@@ -140,19 +140,21 @@ python install.py          # Windows 也可用 py install.py</code></pre>
   <tr><th>引擎</th><th>VOICE_ENGINE</th><th>特点</th><th>适用</th></tr>
   <tr><td><b>Whisper</b></td><td><code>whisper</code>(默认)</td><td>多语言,中英混说友好</td><td>通用 / 英文多</td></tr>
   <tr><td><b>SenseVoice</b></td><td><code>sensevoice</code></td><td>达摩院,中文/方言优化,带标点,极快</td><td>中文为主</td></tr>
+  <tr><td><b>Paraformer</b></td><td><code>paraformer</code></td><td>SeACo-Paraformer,<b>支持热词偏置</b>(动态喂词治同音错)</td><td>中文 + 术语多</td></tr>
 </table>
-<div class="note"><b>准确度</b>:中文「技术同音词」(时延/实验/食言)对所有通用模型都难,换模型只能小幅缓解。根治靠<b>热词偏置</b>(第⑩节)。</div>
+<div class="note"><b>准确度</b>:中文「技术同音词」(时延/实验/食言)对通用模型(Whisper/SenseVoice)都难。根治靠 <b>Paraformer 热词偏置</b>(第⑩节)。</div>
 
 <h2 id="config">⑤ 配置项</h2>
 <p>所有配置写在 <code>voice.env</code>,voiced 启动时自动读取,两平台通用。</p>
 <table>
   <tr><th>变量</th><th>作用</th><th>默认</th></tr>
-  <tr><td><code>VOICE_ENGINE</code></td><td>whisper / sensevoice</td><td>whisper</td></tr>
+  <tr><td><code>VOICE_ENGINE</code></td><td>whisper / sensevoice / paraformer</td><td>whisper</td></tr>
   <tr><td><code>VOICE_KEY</code></td><td>热键 alt_r/ctrl_r/cmd_r/f5…</td><td>alt_r</td></tr>
   <tr><td><code>VOICE_LANG</code></td><td>zh/en;空=自动</td><td>空</td></tr>
   <tr><td><code>WHISPER_MODEL</code></td><td>Whisper 模型(mac/win 取值不同)</td><td>见下</td></tr>
   <tr><td><code>SENSEVOICE_MODEL</code></td><td>SenseVoice 模型</td><td>iic/SenseVoiceSmall</td></tr>
   <tr><td><code>VOICE_PROMPT</code></td><td>Whisper 热词/上下文提示</td><td>空</td></tr>
+  <tr><td><code>VOICE_HOTWORD</code></td><td>Paraformer 静态热词(动态词用 hotwords.txt,第⑩节)</td><td>空</td></tr>
   <tr><td><code>VOICE_SOUND</code> / <code>VOICE_NOTIFY</code> / <code>VOICE_NO_PASTE</code></td><td>声音 / 通知 / 只复制不粘贴</td><td>关</td></tr>
 </table>
 <h4>Whisper 模型选项</h4>
@@ -228,15 +230,20 @@ curl -L -o config.json \
   <p>SenseVoice 走 ModelScope(国内快),一般不受影响——<b>中文场景直接用 SenseVoice 引擎通常更省事</b>。</p>
 </div>
 
-<h2 id="plan">⑩ 规划中:热词偏置(技术词准确度)</h2>
+<h2 id="plan">⑩ 热词偏置:动态喂词(治技术同音词)✅</h2>
 <div class="note plan">
-  根治「技术同音词」(时延/实验)靠<b>热词偏置</b>:
+  <code>paraformer</code> 引擎用 <b>SeACo-Paraformer</b> 做<b>热词偏置</b>:给一份词清单,遇同音歧义强制优先匹配。模型从 ModelScope 下载(国内快)。
+  <p><b>启用</b>:<code>voice.env</code> 设 <code>VOICE_ENGINE=paraformer</code> → 重启。</p>
+  <p><b>动态喂词(核心)</b>:热词放 <code>hotwords.txt</code>(每行一个),<b>引擎每次转写实时读取,加词无需重启</b>。工作流:说一句 → 某词转错 → 立刻喂正确词 → 再说就对了。</p>
+  <pre><code>addhot 时延 推理 吞吐量            # 加词(任意目录)
+python ~/voice-helper/add_hotword.py 时延 推理   # 等价
+addhot                            # 查看当前热词</code></pre>
   <ul>
-    <li>引擎换 FunASR 的 <b>SeACo-Paraformer</b>(支持 <code>hotword</code>)</li>
-    <li>新增 <code>VOICE_ENGINE=paraformer</code> + <code>VOICE_HOTWORD=&lt;词表&gt;</code></li>
-    <li>模型从 ModelScope 下载(国内快),funasr 已就绪、跨平台</li>
+    <li>静态热词也可写 <code>voice.env</code> 的 <code>VOICE_HOTWORD=时延 推理</code>(与 hotwords.txt 合并)。</li>
+    <li><code>hotwords.txt</code> 是个人词库,已 gitignore;仓库带起步样例 <code>hotwords.txt.example</code>。</li>
+    <li>跨平台通用(Windows 用 <code>python add_hotword.py …</code>)。</li>
   </ul>
-  <b>尚未启用。</b>启用后 Whisper / SenseVoice / Paraformer 三引擎可切换。
+  <b>注</b>:Paraformer 输出<b>不带标点</b>(SenseVoice 带);重术语准确度选 Paraformer,重标点选 SenseVoice。
 </div>
 
 <h2 id="uninstall">⑪ 卸载</h2>

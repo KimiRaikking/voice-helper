@@ -58,9 +58,14 @@ def _load_env_file():
 _load_env_file()
 
 SAMPLE_RATE = 16000
-ENGINE = os.environ.get("VOICE_ENGINE", "whisper").lower()  # "whisper" | "sensevoice"
+ENGINE = os.environ.get("VOICE_ENGINE", "whisper").lower()  # whisper | sensevoice | paraformer
 WHISPER_MODEL_ENV = os.environ.get("WHISPER_MODEL") or None
 SENSEVOICE_MODEL = os.environ.get("SENSEVOICE_MODEL", "iic/SenseVoiceSmall")
+PARAFORMER_MODEL = os.environ.get(
+    "PARAFORMER_MODEL",
+    "iic/speech_seaco_paraformer_large_asr_nat-zh-cn-16k-common-vocab8404-pytorch")
+HOTWORD_ENV = (os.environ.get("VOICE_HOTWORD") or "").strip()
+HOTWORDS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "hotwords.txt")
 LANG = os.environ.get("VOICE_LANG") or None
 PROMPT = os.environ.get("VOICE_PROMPT") or None
 AUTO_PASTE = "VOICE_NO_PASTE" not in os.environ
@@ -83,6 +88,7 @@ _mlx = None
 _fw_model = None
 _whisper_backend = None  # "mlx" | "faster"
 _sv_model = None         # lazily-loaded SenseVoice (funasr) model
+_pf_model = None         # lazily-loaded SeACo-Paraformer (funasr) model
 
 # Whisper sometimes emits Traditional Chinese; force Simplified (no effect on English).
 try:
@@ -140,9 +146,12 @@ _LABELS = {
 }
 
 
+_ENGINE_LABEL = {"sensevoice": "SenseVoice", "paraformer": "Paraformer"}
+
+
 def get_display():
     name, last = state.display()
-    eng = "SenseVoice" if ENGINE == "sensevoice" else "Whisper"
+    eng = _ENGINE_LABEL.get(ENGINE, "Whisper")
     return name, f"[{eng}] " + _LABELS.get(name, name), last
 
 
@@ -250,9 +259,47 @@ def _transcribe_sensevoice(audio: np.ndarray) -> str:
     return rich_transcription_postprocess(res[0]["text"]).strip()
 
 
+def read_hotwords() -> str:
+    """Merge VOICE_HOTWORD env + hotwords.txt (read fresh each call, so adding a
+    word takes effect on the very next utterance — no restart needed)."""
+    words = HOTWORD_ENV.split() if HOTWORD_ENV else []
+    try:
+        with open(HOTWORDS_FILE, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#"):
+                    words += line.split()
+    except FileNotFoundError:
+        pass
+    seen, out = set(), []
+    for w in words:
+        if w not in seen:
+            seen.add(w)
+            out.append(w)
+    return " ".join(out)
+
+
+def _transcribe_paraformer(audio: np.ndarray) -> str:
+    global _pf_model
+    if _pf_model is None:
+        from funasr import AutoModel
+        _pf_model = AutoModel(model=PARAFORMER_MODEL, hub="ms", disable_update=True)
+    kwargs = {"input": audio, "cache": {}}
+    hot = read_hotwords()
+    if hot:
+        kwargs["hotword"] = hot  # SeACo-Paraformer: space-separated bias words
+    res = _pf_model.generate(**kwargs)
+    if not res:
+        return ""
+    # Paraformer-zh returns characters possibly space-separated; collapse for Chinese.
+    return res[0].get("text", "").replace(" ", "").strip()
+
+
 def transcribe(audio: np.ndarray) -> str:
     if ENGINE == "sensevoice":
         text = _transcribe_sensevoice(audio)
+    elif ENGINE == "paraformer":
+        text = _transcribe_paraformer(audio)
     else:
         text = _transcribe_whisper(audio)
     return _to_simplified(text)

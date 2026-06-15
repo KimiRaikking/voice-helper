@@ -14,3 +14,6 @@ xiaohongshu*.md
 
 # local model files (large, do not commit)
 models/
+
+# personal hotword list (starter committed as hotwords.txt.example)
+hotwords.txt

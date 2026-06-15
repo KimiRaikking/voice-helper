@@ -48,14 +48,18 @@ def install_deps(with_sensevoice: bool):
         run([VPY, "-m", "pip", "install", "-r", str(r)])
 
 
-def ensure_config():
-    cfg = HERE / "voice.env"
-    ex = HERE / "voice.env.example"
-    if not cfg.exists() and ex.exists():
-        cfg.write_text(ex.read_text(encoding="utf-8"), encoding="utf-8")
-        print(f"• wrote {cfg.name} (edit it to change engine/hotkey/language)")
+def _seed(name: str, desc: str):
+    target, example = HERE / name, HERE / f"{name}.example"
+    if not target.exists() and example.exists():
+        target.write_text(example.read_text(encoding="utf-8"), encoding="utf-8")
+        print(f"• wrote {name} ({desc})")
     else:
-        print("• voice.env present — leaving your config untouched")
+        print(f"• {name} present — left untouched")
+
+
+def ensure_config():
+    _seed("voice.env", "edit it to change engine/hotkey/language")
+    _seed("hotwords.txt", "Paraformer hotwords; add words with add_hotword.py")
 
 
 # --- autostart -----------------------------------------------------------------
