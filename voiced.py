@@ -57,6 +57,18 @@ def _load_env_file():
 
 _load_env_file()
 
+
+def _apply_proxy():
+    """If VOICE_PROXY is set (e.g. copied from `git config --get http.proxy`),
+    route model downloads (HuggingFace / ModelScope) through it."""
+    p = (os.environ.get("VOICE_PROXY") or "").strip()
+    if p:
+        for k in ("HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy"):
+            os.environ.setdefault(k, p)
+
+
+_apply_proxy()
+
 SAMPLE_RATE = 16000
 ENGINE = os.environ.get("VOICE_ENGINE", "whisper").lower()  # whisper | sensevoice | paraformer
 WHISPER_MODEL_ENV = os.environ.get("WHISPER_MODEL") or None

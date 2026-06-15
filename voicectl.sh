@@ -43,6 +43,10 @@ case "${1:-}" in
     shift
     "$PY" "$DIR/add_hotword.py" "$@"
     ;;
+  download)
+    shift
+    "$PY" "$DIR/download_model.py" "$@"   # 走 voice.env 里的 VOICE_PROXY
+    ;;
   doctor)
     code() { curl -s -m 8 -o /dev/null -w "%{http_code}" "$1" 2>/dev/null || echo 000; }
     eng=$(grep -E '^VOICE_ENGINE=' "$DIR/voice.env" 2>/dev/null | head -1 | cut -d= -f2)
@@ -64,6 +68,6 @@ case "${1:-}" in
     echo "(返回200=通,000=连不上)"
     ;;
   *)
-    echo "用法: bash voicectl.sh {status|start|stop|restart|log|hot <词...>|doctor}"
+    echo "用法: bash voicectl.sh {status|start|stop|restart|log|hot <词...>|doctor|download [all]}"
     ;;
 esac
