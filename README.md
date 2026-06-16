@@ -41,7 +41,7 @@ python install.py          # Windows 也可用 py install.py
 |------|-------|---------|
 | Whisper 后端 | `mlx-whisper`(Apple GPU) | `faster-whisper`(CPU,int8) |
 | SenseVoice | funasr(通用) | funasr(通用) |
-| 状态指示 | 顶部菜单栏 emoji(rumps) | 右下角系统托盘彩色图标(pystray) |
+| 状态指示 | 顶部菜单栏 emoji(rumps) | 右下角系统托盘 emoji(pystray + Segoe UI Emoji) |
 | 粘贴 | Cmd+V | Ctrl+V |
 | 开机自启 | LaunchAgent | 启动文件夹 VBS(隐藏) |
 | 系统授权 | 需输入监控/辅助功能/麦克风 | 无需特殊授权 |
@@ -110,18 +110,22 @@ python install.py          # Windows 也可用 py install.py
 2. **按住热键**(默认右 Option / 右 Alt)→ 说话 → **松开**。
 3. 文字自动转写并粘贴到光标处。
 
-状态图标实时显示;点开可见**当前引擎**(`[Whisper]`/`[SenseVoice]`)、最近识别文字(点击可复制)、退出按钮。
+点开图标的菜单可见:**状态** / **最近识别文字**(点击可复制) / **切换引擎**(Whisper/SenseVoice/Paraformer,当前打勾,点一下**即时热切换、无需重启**) / 退出。
 
 - **macOS**:图标在屏幕**最顶部菜单栏**(靠近刘海一侧)。
 - **Windows**:图标在**右下角系统托盘**(若被折叠,点任务栏的 `^` 展开);**右键**图标看菜单。
 
-| 图标(mac) | 颜色(win) | 含义 |
-|------|------|------|
-| 🎤 | 蓝 | 待命 |
-| 🔴 | 红 | 录音中 |
-| ⏳ | 黄 | 转写中 |
-| ✅ | 绿 | 完成 |
-| ⚠️ | 橙 | 太短 / 失败 |
+mac 和 Windows 都用同一套 emoji 图标:
+
+| 图标 | 含义 |
+|------|------|
+| 🎤 | 待命 |
+| 🔴 | 录音中 |
+| ⏳ | 转写中 |
+| ✅ | 完成 |
+| ⚠️ | 太短 / 失败 |
+
+> Windows 用 Segoe UI Emoji 渲染同款彩色 emoji;个别老系统渲染不了时自动退回彩色圆点。
 
 ---
 
