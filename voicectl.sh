@@ -35,8 +35,8 @@ case "${1:-}" in
     echo "voiced 已停止。"
     ;;
   start)
-    ( cd "$DIR" && nohup "$PYW" voiced.py >/dev/null 2>&1 & )
-    echo "voiced 已启动 — 托盘图标在右下角(点 ^ 展开)。"
+    ( cd "$DIR" && nohup "$PYW" voiced.py >> "$DIR/voiced.log" 2>&1 & )
+    echo "voiced 已启动 — 托盘图标在右下角(点 ^ 展开)。日志: voiced.log"
     ;;
   restart)
     "$0" stop; sleep 1; "$0" start

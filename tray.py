@@ -96,19 +96,23 @@ def _make_pystray_tray(get_display, on_copy_last, on_switch_engine, current_engi
             self.icon = pystray.Icon("voice", images["idle"], "语音输入", self._menu())
 
         def _menu(self):
-            # Flat menu (no submenu / no checked= — both upset older pystray on
-            # Windows). Active engine shown via ●/○ in dynamic item text.
+            # Plainest possible flat menu (plain-string items + action only —
+            # no submenu / no checked= / no dynamic text on engine items).
+            # Current engine is shown in the status line (get_display -> [Engine]).
             try:
-                items = [pystray.MenuItem(lambda item: get_display()[1], None, enabled=False)]
-                for key, label in ENGINE_LABELS.items():
-                    items.append(pystray.MenuItem(
-                        (lambda item, kk=key, lb=label:
-                            ("● " if current_engine() == kk else "○ ") + lb),
-                        (lambda icon, item, kk=key: on_switch_engine(kk))))
-                items.append(pystray.MenuItem("复制最近识别", lambda icon, item: on_copy_last()))
-                items.append(pystray.MenuItem("退出语音输入", self._quit))
+                items = [
+                    pystray.MenuItem(lambda item: get_display()[1], None, enabled=False),
+                    pystray.MenuItem("切到 Whisper", lambda i, it: on_switch_engine("whisper")),
+                    pystray.MenuItem("切到 SenseVoice", lambda i, it: on_switch_engine("sensevoice")),
+                    pystray.MenuItem("切到 Paraformer", lambda i, it: on_switch_engine("paraformer")),
+                    pystray.MenuItem("复制最近识别", lambda i, it: on_copy_last()),
+                    pystray.MenuItem("退出语音输入", self._quit),
+                ]
                 return pystray.Menu(*items)
             except Exception:
+                import traceback
+                print("⚠ 托盘菜单构建失败:", flush=True)
+                traceback.print_exc()
                 return pystray.Menu(pystray.MenuItem("退出语音输入", self._quit))
 
         def _quit(self, icon, item):
