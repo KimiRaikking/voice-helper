@@ -96,15 +96,15 @@ def _make_pystray_tray(get_display, on_copy_last, on_switch_engine, current_engi
             self.icon = pystray.Icon("voice", images["idle"], "语音输入", self._menu())
 
         def _menu(self):
-            # Flat menu (no submenu — Windows pystray backend dislikes nesting);
-            # whole thing guarded so a bad item never hides the icon.
+            # Flat menu (no submenu / no checked= — both upset older pystray on
+            # Windows). Active engine shown via ●/○ in dynamic item text.
             try:
                 items = [pystray.MenuItem(lambda item: get_display()[1], None, enabled=False)]
                 for key, label in ENGINE_LABELS.items():
                     items.append(pystray.MenuItem(
-                        "引擎: " + label,
-                        (lambda icon, item, kk=key: on_switch_engine(kk)),
-                        checked=(lambda item, kk=key: current_engine() == kk)))
+                        (lambda item, kk=key, lb=label:
+                            ("● " if current_engine() == kk else "○ ") + lb),
+                        (lambda icon, item, kk=key: on_switch_engine(kk))))
                 items.append(pystray.MenuItem("复制最近识别", lambda icon, item: on_copy_last()))
                 items.append(pystray.MenuItem("退出语音输入", self._quit))
                 return pystray.Menu(*items)
