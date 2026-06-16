@@ -23,17 +23,39 @@ MODELS_DIR = Path(__file__).resolve().parent / "models"
 INSECURE = (os.environ.get("VOICE_INSECURE") or "") == "1"
 
 
-def _curl(url, dest, size):
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    if dest.exists() and size and dest.stat().st_size == size:
-        print(f"  ✓ 已完整,跳过 {dest.name}")
-        return
-    cmd = ["curl", "-L", "-C", "-", "--retry", "30", "--retry-delay", "5",
-           "--retry-all-errors", "--fail", "-o", str(dest), url]
+def _ok(dest, size):
+    return dest.exists() and (not size or dest.stat().st_size == size)
+
+
+def _run_curl(url, dest, resume):
+    cmd = ["curl", "-L", "--retry", "10", "--retry-delay", "5",
+           "--retry-all-errors", "-o", str(dest), url]
+    if resume:
+        cmd[1:1] = ["-C", "-"]
     if INSECURE:
         cmd.insert(1, "-k")
+    subprocess.run(cmd, check=False)
+
+
+def _curl(url, dest, size):
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    if _ok(dest, size):
+        print(f"  ✓ 已完整,跳过 {dest.name}")
+        return
+    if dest.exists() and size and dest.stat().st_size > size:
+        dest.unlink()  # over-sized / corrupt -> redo clean
     print(f"  ↓ {dest.name}  ({(size or 0) / 1e6:.1f} MB)", flush=True)
-    subprocess.run(cmd, check=True)
+    # 1) try byte-range resume; 2) if still wrong, clean + full re-download
+    _run_curl(url, dest, resume=dest.exists())
+    if _ok(dest, size):
+        return
+    if dest.exists():
+        dest.unlink()
+    print(f"    续传不成,改整文件重下 {dest.name}", flush=True)
+    _run_curl(url, dest, resume=False)
+    if not _ok(dest, size):
+        raise RuntimeError(
+            f"{dest.name} 下载不完整 ({dest.stat().st_size if dest.exists() else 0}/{size})")
 
 
 def dl_model(model_id):
