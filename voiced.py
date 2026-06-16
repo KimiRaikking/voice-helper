@@ -115,13 +115,23 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 
 
 def _resolve_model(value):
-    """If value is a repo id but a curl-downloaded copy exists under models/<name>,
-    prefer that local dir — so it works offline even if voice.env wasn't updated."""
+    """If value is a repo id but a local copy already exists (curl -> models/<name>,
+    or snapshot -> modelscope cache), return that local dir so funasr loads it
+    WITHOUT hitting the ModelScope API (which fails behind an auth proxy: 407)."""
     value = (value or "").strip()
-    if value and not os.path.isdir(value):
-        local = os.path.join(_HERE, "models", value.split("/")[-1])
-        if os.path.isdir(local):
-            return local
+    if not value or os.path.isdir(value):
+        return value
+    name = value.split("/")[-1]
+    candidates = [
+        os.path.join(_HERE, "models", name),                                   # curldl
+        os.path.expanduser(os.path.join("~/.cache/modelscope/hub/models", value)),  # snapshot
+    ]
+    for c in candidates:
+        try:
+            if os.path.isdir(c) and any(f.endswith(".pt") for f in os.listdir(c)):
+                return c
+        except OSError:
+            pass
     return value
 
 
