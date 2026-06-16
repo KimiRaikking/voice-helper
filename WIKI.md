@@ -134,6 +134,7 @@ bash voicectl.sh fix 食盐 时延
 | 下载报 `self signed certificate` | 代理 TLS 拦截 | `voice.env` 加 `VOICE_INSECURE=1`(或配 `VOICE_CA`) |
 | 下载全 `000` / 连不上 | 没走代理 | `voice.env` 配 `VOICE_PROXY`(同 git 的代理) |
 | `model.pt` 越下越大 / 反复断 | modelscope 续传在烂代理上坏 | 用 `bash voicectl.sh curldl all`(curl 断点续传) |
+| 切 Paraformer 报 `negative dimension -1: [-1,512]` | 部分 Windows 的 funasr/torch 不兼容 SeACo-Paraformer | 用 `sensevoice`(稳、带标点);准确度靠 `fix` 自动纠正补 |
 | 按右 Alt 没反应 | 右 Alt 是 AltGr | 已自动兼容;仍不行改 `VOICE_KEY=f8` |
 | 托盘菜单只有“退出” | 旧版 pystray 兼容问题 | 升级到最新代码(`git pull`) |
 | 远程按键有反应但不出字 | 远程桌面不转发麦克风 | 到真机操作;或开 RDP「本地资源→远程音频→录制」 |

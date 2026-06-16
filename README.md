@@ -537,6 +537,7 @@ bash voicectl.sh restart
 | 下载全 `000` / 连不上 | 没走代理 | `git config --get http.proxy` 拿到值填 `voice.env` 的 `VOICE_PROXY` |
 | `model.pt` 越下越大(涨爆)/ 反复断 | modelscope 的 python 下载在烂代理上续传是坏的 | 改用 `bash voicectl.sh curldl all`(curl 真·断点续传) |
 | `seg_dict` 老下不下来 | 它是分词词典,**推理用不到** | 可忽略;curldl 已把它设为可选 |
+| 切到 Paraformer 报 `tensor ... negative dimension -1: [-1,512]` | 部分 Windows 的 funasr/torch 版本对 SeACo-Paraformer 不兼容 | **改用 `sensevoice`**(中文也好、带标点、稳);准确度靠 `fix` 自动纠正补 |
 | 按热键(右 Alt)无反应 | 右 Alt 在多数 Windows 布局是 **AltGr**(pynput 上报 `alt_gr`) | 已自动兼容 `alt_r`+`alt_gr`;仍不行换 `VOICE_KEY=f8` |
 | `.bat` 里中文乱码 | cmd 默认 GBK 代码页 | 脚本已改英文提示;或用 Git Bash 跑 `voicectl.sh` |
 | `status` 老看到旧报错 | `voiced.log` 是追加写 | `status`/`doctor` 只显示**本次启动以来**(认 `===== voiced 启动 =====` 横幅) |
