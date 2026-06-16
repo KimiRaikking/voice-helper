@@ -55,13 +55,13 @@ def _hf(repo):
 
 
 def dl_sensevoice():
-    return _retry("SenseVoice", lambda: _ms(voiced.SENSEVOICE_MODEL))
+    return _retry("SenseVoice", lambda: _ms(voiced.SENSEVOICE_REPO))
 
 
 def dl_paraformer():
-    ok = _retry("Paraformer", lambda: _ms(voiced.PARAFORMER_MODEL))
+    ok = _retry("Paraformer", lambda: _ms(voiced.PARAFORMER_REPO))
     if voiced.PUNC_MODEL:
-        ok = _retry("标点模型", lambda: _ms(voiced.PUNC_MODEL)) and ok
+        ok = _retry("标点模型", lambda: _ms(voiced.PUNC_REPO)) and ok
     return ok
 
 

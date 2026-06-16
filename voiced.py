@@ -104,13 +104,18 @@ _apply_tls()
 SAMPLE_RATE = 16000
 ENGINE = os.environ.get("VOICE_ENGINE", "whisper").lower()  # whisper | sensevoice | paraformer
 WHISPER_MODEL_ENV = os.environ.get("WHISPER_MODEL") or None
-SENSEVOICE_MODEL = os.environ.get("SENSEVOICE_MODEL", "iic/SenseVoiceSmall")
-PARAFORMER_MODEL = os.environ.get(
-    "PARAFORMER_MODEL",
-    "iic/speech_seaco_paraformer_large_asr_nat-zh-cn-16k-common-vocab8404-pytorch")
+# Canonical ModelScope repo ids — used by the downloaders (never change to a
+# local path). The *_MODEL values below are what's LOADED, and may be overridden
+# to a local directory (e.g. by ms_curl_download.py) — so loaders and downloaders
+# must not share the same variable.
+SENSEVOICE_REPO = "iic/SenseVoiceSmall"
+PARAFORMER_REPO = "iic/speech_seaco_paraformer_large_asr_nat-zh-cn-16k-common-vocab8404-pytorch"
+PUNC_REPO = "iic/punc_ct-transformer_zh-cn-common-vocab272727-pytorch"
+
+SENSEVOICE_MODEL = os.environ.get("SENSEVOICE_MODEL", SENSEVOICE_REPO)
+PARAFORMER_MODEL = os.environ.get("PARAFORMER_MODEL", PARAFORMER_REPO)
 # Punctuation model for Paraformer (it has none by default). Empty = no punctuation.
-PUNC_MODEL = os.environ.get(
-    "VOICE_PUNC", "iic/punc_ct-transformer_zh-cn-common-vocab272727-pytorch").strip()
+PUNC_MODEL = os.environ.get("VOICE_PUNC", PUNC_REPO).strip()
 HOTWORD_ENV = (os.environ.get("VOICE_HOTWORD") or "").strip()
 _HERE = os.path.dirname(os.path.abspath(__file__))
 HOTWORDS_FILE = os.path.join(_HERE, "hotwords.txt")

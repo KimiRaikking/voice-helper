@@ -55,13 +55,12 @@ def dl_model(model_id):
 
 
 def models_for(engine):
+    # Always the canonical repo ids (voiced.*_MODEL may be a local path post-curldl).
     if engine == "sensevoice":
-        return [voiced.SENSEVOICE_MODEL]
+        return [voiced.SENSEVOICE_REPO]
     if engine == "paraformer":
-        m = [voiced.PARAFORMER_MODEL]
-        if voiced.PUNC_MODEL:
-            m.append(voiced.PUNC_MODEL)
-        return m
+        return [voiced.PARAFORMER_REPO, voiced.PUNC_REPO] if voiced.PUNC_MODEL \
+            else [voiced.PARAFORMER_REPO]
     return []
 
 
@@ -85,9 +84,9 @@ def _key_for(model_id):
 
 def main():
     if len(sys.argv) > 1 and sys.argv[1] == "all":
-        ids = [voiced.SENSEVOICE_MODEL, voiced.PARAFORMER_MODEL]
+        ids = [voiced.SENSEVOICE_REPO, voiced.PARAFORMER_REPO]
         if voiced.PUNC_MODEL:
-            ids.append(voiced.PUNC_MODEL)
+            ids.append(voiced.PUNC_REPO)
     else:
         ids = models_for(voiced.ENGINE)
     if not ids:
