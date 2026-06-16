@@ -63,6 +63,9 @@ case "${1:-}" in
   selftest)
     "$PY" "$DIR/selftest.py"   # 基础测试:模型加载/推理/纠正/剪贴板(不需麦克风)
     ;;
+  checkmodel)
+    "$PY" "$DIR/checkmodel.py"   # 比对 configuration.json 期望的文件名 vs 实际文件(定位 spectok/specctok)
+    ;;
   clean)
     # 杀掉残留的 python.exe 下载/worker 进程(不动 pythonw 后台服务)+ 删锁
     powershell -NoProfile -Command "Get-Process python -ErrorAction SilentlyContinue | Stop-Process -Force" 2>/dev/null
@@ -96,6 +99,6 @@ case "${1:-}" in
     echo "(返回200=通,000=连不上)"
     ;;
   *)
-    echo "用法: bash voicectl.sh {status|start|stop|restart|log|doctor|download [all]|hot <词...>|fix <错> <对>|clean|curldl [all]|selftest}"
+    echo "用法: bash voicectl.sh {status|start|stop|restart|log|doctor|download [all]|hot <词...>|fix <错> <对>|clean|curldl [all]|selftest|checkmodel}"
     ;;
 esac
