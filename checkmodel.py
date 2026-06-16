@@ -28,7 +28,10 @@ cfgp = os.path.join(d, "configuration.json")
 if not os.path.exists(cfgp):
     sys.exit("缺少 configuration.json")
 cfg = json.load(open(cfgp, encoding="utf-8"))
-bpe = (cfg.get("tokenizer_conf") or {}).get("bpemodel")
+# SenseVoice nests it under file_path_metas; be tolerant of either layout.
+fpm = cfg.get("file_path_metas") or {}
+bpe = ((fpm.get("tokenizer_conf") or {}).get("bpemodel")
+       or (cfg.get("tokenizer_conf") or {}).get("bpemodel"))
 print("配置期望 bpemodel:", repr(bpe))
 
 if not bpe:
