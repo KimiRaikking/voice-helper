@@ -80,6 +80,10 @@ case "${1:-}" in
     echo "3 当前引擎 ${eng:-空}"
     have SenseVoice && echo "4 中文模型SenseVoice 有" || echo "4 中文模型SenseVoice 无(空/缺)"
     have paraformer && echo "5 热词模型Paraformer 有" || echo "5 热词模型Paraformer 无(空/缺)"
+    # voiced 实际解析出的加载路径:本地路径=会离线加载;显示 iic/... =没找到本地、会联网下载
+    mp=$("$PY" -c "import voiced,os; e=voiced.ENGINE; print(voiced.SENSEVOICE_MODEL if e=='sensevoice' else voiced.PARAFORMER_MODEL if e=='paraformer' else (voiced.WHISPER_MODEL_ENV or 'whisper'))" 2>/dev/null)
+    echo "9 实际加载路径 ${mp:-?}"
+    case "$mp" in iic/*|"") echo "   ⚠ 不是本地路径 → 会联网下载(撞代理)";; *) echo "   ✓ 本地路径,离线加载";; esac
     echo "6 连GitHub 返回 $(code https://github.com)"
     echo "7 连魔搭ModelScope 返回 $(code https://www.modelscope.cn)"
     echo "8 连抱抱脸HuggingFace 返回 $(code https://huggingface.co)"
