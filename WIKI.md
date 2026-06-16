@@ -2,7 +2,7 @@
 
 > 本地、离线的「按住说话」语音输入:在任意 App 的输入框里按住一个键说话,松开后自动把语音转成文字插入光标处。纯本地运行、不联网、零成本。Windows / macOS 通用,本文以 **Windows** 为主。
 
-> 内部仓库地址:`<在此填公司内部 Git 地址>`(本文命令里的 `git clone` 请替换为该地址)
+> 仓库地址:`https://github.com/KimiRaikking/voice-helper.git`
 
 ---
 
@@ -28,7 +28,7 @@
 > ⚠️ **必须放在纯英文路径**(如 `D:\voice-helper`)。**不要**放含中文/空格的目录(如 `D:\智能运维\...`)——会导致模型加载报「Not Found」。
 
 ```bash
-git clone <公司内部仓库地址> voice-helper   # 克隆到纯英文路径
+git clone https://github.com/KimiRaikking/voice-helper.git   # 克隆到纯英文路径
 cd voice-helper
 python install.py                          # 建虚拟环境、装依赖、配开机自启
 ```
