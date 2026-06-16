@@ -503,3 +503,45 @@ cd %USERPROFILE% && rmdir /s /q "%USERPROFILE%\voice-helper"
 :: 可选:删模型缓存
 :: rmdir /s /q "%USERPROFILE%\.cache\modelscope\hub\models\iic\SenseVoiceSmall"
 ```
+
+---
+
+## 十三、Windows 部署避坑速查
+
+公司/内网 Windows 上从零部署,按这个顺序最稳:
+
+```bash
+# 1) 克隆到纯英文路径(关键!)
+git clone https://github.com/KimiRaikking/voice-helper.git   # D:\voice-helper 等
+cd /d/voice-helper
+# 2) 安装(没网/代理装不上依赖时,见下表“依赖装不上”)
+python install.py
+# 3) 模型:网络好直接首次说话自动下;烂网络/代理用 curl 断点续传
+bash voicectl.sh curldl all
+# 4) 自测 + 启动
+bash voicectl.sh selftest
+bash voicectl.sh restart
+```
+
+踩过的坑与解法:
+
+| 现象 | 原因 | 解法 |
+|------|------|------|
+| 报 `Not Found ...bpe.model`(文件其实在) | 路径含**中文/非ASCII**,SentencePiece 打不开 | 项目放纯英文路径;已装错的跑 `bash voicectl.sh fixpath` |
+| 启动日志 `api ... 407` / `authentication required` | 公司代理要鉴权,模型加载去 ping ModelScope API | 模型下到本地后会**离线加载、不调 API**;确保 `doctor` 第9行是“本地路径” |
+| 下载报 `self signed certificate in certificate chain` | 公司代理做 TLS 拦截(自签证书) | `voice.env` 设 `VOICE_CA=<公司根证书>`;拿不到证书则 `VOICE_INSECURE=1` |
+| 下载全 `000` / 连不上 | 没走代理 | `git config --get http.proxy` 拿到值填 `voice.env` 的 `VOICE_PROXY` |
+| `model.pt` 越下越大(涨爆)/ 反复断 | modelscope 的 python 下载在烂代理上续传是坏的 | 改用 `bash voicectl.sh curldl all`(curl 真·断点续传) |
+| `seg_dict` 老下不下来 | 它是分词词典,**推理用不到** | 可忽略;curldl 已把它设为可选 |
+| 按热键(右 Alt)无反应 | 右 Alt 在多数 Windows 布局是 **AltGr**(pynput 上报 `alt_gr`) | 已自动兼容 `alt_r`+`alt_gr`;仍不行换 `VOICE_KEY=f8` |
+| `.bat` 里中文乱码 | cmd 默认 GBK 代码页 | 脚本已改英文提示;或用 Git Bash 跑 `voicectl.sh` |
+| `status` 老看到旧报错 | `voiced.log` 是追加写 | `status`/`doctor` 只显示**本次启动以来**(认 `===== voiced 启动 =====` 横幅) |
+| 依赖装不上(pip 连不上) | 代理/内网 | `pip` 配公司代理 / 内网 PyPI 镜像;或在通网机器装好 `.venv` 拷过去 |
+| 远程按热键有反应但不出字(橙色) | 远程桌面**不转发本地麦克风** | 到真机跟前;或开 RDP「本地资源→远程音频→录制」转发麦克风 |
+
+**配置全在 `voice.env`**,公司机器常用:
+```
+VOICE_ENGINE=sensevoice        # 或 paraformer(中文最准+热词+标点)
+VOICE_PROXY=http://用户:密码@IP:端口   # 同 git 的代理
+VOICE_INSECURE=1               # 代理 TLS 拦截、拿不到证书时
+```
