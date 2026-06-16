@@ -84,25 +84,32 @@ def _make_pystray_tray(get_display, on_copy_last, on_switch_engine, current_engi
             pass
         return _circle(ICON_COLORS[key])
 
-    images = {k: _emoji(ICON_EMOJI[k], k) for k in ICON_EMOJI}
+    images = {}
+    for k in ICON_EMOJI:
+        try:
+            images[k] = _emoji(ICON_EMOJI[k], k)
+        except Exception:
+            images[k] = _circle(ICON_COLORS[k])
 
     class _PystrayTray:
         def __init__(self):
-            eng_sub = pystray.Menu(*[
-                pystray.MenuItem(
-                    label,
-                    (lambda icon, item, kk=key: on_switch_engine(kk)),
-                    checked=(lambda item, kk=key: current_engine() == kk),
-                    radio=True,
-                ) for key, label in ENGINE_LABELS.items()
-            ])
-            menu = pystray.Menu(
-                pystray.MenuItem(lambda item: get_display()[1], None, enabled=False),
-                pystray.MenuItem("切换引擎", eng_sub),
-                pystray.MenuItem("复制最近识别", lambda icon, item: on_copy_last()),
-                pystray.MenuItem("退出语音输入", self._quit),
-            )
-            self.icon = pystray.Icon("voice", images["idle"], "语音输入", menu)
+            self.icon = pystray.Icon("voice", images["idle"], "语音输入", self._menu())
+
+        def _menu(self):
+            # Flat menu (no submenu — Windows pystray backend dislikes nesting);
+            # whole thing guarded so a bad item never hides the icon.
+            try:
+                items = [pystray.MenuItem(lambda item: get_display()[1], None, enabled=False)]
+                for key, label in ENGINE_LABELS.items():
+                    items.append(pystray.MenuItem(
+                        "引擎: " + label,
+                        (lambda icon, item, kk=key: on_switch_engine(kk)),
+                        checked=(lambda item, kk=key: current_engine() == kk)))
+                items.append(pystray.MenuItem("复制最近识别", lambda icon, item: on_copy_last()))
+                items.append(pystray.MenuItem("退出语音输入", self._quit))
+                return pystray.Menu(*items)
+            except Exception:
+                return pystray.Menu(pystray.MenuItem("退出语音输入", self._quit))
 
         def _quit(self, icon, item):
             icon.stop()
