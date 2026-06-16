@@ -375,17 +375,34 @@ def read_hotwords() -> str:
     return " ".join(out)
 
 
+_pf_hotword_ok = True  # SeACo hotword path crashes on some funasr versions ([-1,512])
+
+
 def _transcribe_paraformer(audio: np.ndarray) -> str:
-    global _pf_model
+    global _pf_model, _pf_hotword_ok
     if _pf_model is None:
         from funasr import AutoModel
         extra = {"punc_model": PUNC_MODEL} if PUNC_MODEL else {}
         _pf_model = AutoModel(**_fa_init(PARAFORMER_MODEL, **extra))
-    kwargs = {"input": audio, "cache": {}}
     hot = read_hotwords()
-    if hot:
-        kwargs["hotword"] = hot  # SeACo-Paraformer: space-separated bias words
-    res = _pf_model.generate(**kwargs)
+
+    def _gen(use_hot):
+        kw = {"input": audio, "cache": {}}
+        if use_hot and hot:
+            kw["hotword"] = hot  # SeACo-Paraformer: space-separated bias words
+        return _pf_model.generate(**kw)
+
+    res = None
+    if _pf_hotword_ok and hot:
+        try:
+            res = _gen(True)
+        except Exception as e:
+            # e.g. "tensor with negative dimension -1: [-1,512]" — SeACo bias
+            # broken on this funasr/torch build; fall back to plain Paraformer.
+            print(f"⚠ Paraformer 热词不可用,改用无热词(纠正表仍生效): {e}", flush=True)
+            _pf_hotword_ok = False
+    if res is None:
+        res = _gen(False)
     if not res:
         return ""
     # Paraformer-zh returns characters possibly space-separated; collapse for Chinese.
