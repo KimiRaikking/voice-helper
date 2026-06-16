@@ -489,6 +489,10 @@ def _redirect_logs_if_no_console():
 
 def main():
     _redirect_logs_if_no_console()
+    model = SENSEVOICE_MODEL if ENGINE == "sensevoice" else \
+        PARAFORMER_MODEL if ENGINE == "paraformer" else (WHISPER_MODEL_ENV or "whisper")
+    print(f"\n===== voiced 启动 {time.strftime('%Y-%m-%d %H:%M:%S')} | "
+          f"engine={ENGINE} | model={model} =====", flush=True)
     vp.set_accessory_app()  # mac: menu-bar accessory (no Dock icon); no-op elsewhere
     threading.Thread(target=start_listener, daemon=True).start()
     threading.Thread(target=warmup, daemon=True).start()

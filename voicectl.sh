@@ -15,6 +15,11 @@ PY="$DIR/.venv/Scripts/python.exe"     # 有控制台
 # 单引号包住 PowerShell,防止 bash 展开 $_
 PS_FIND='Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like "*voiced.py*" }'
 
+# 只取最近一次「voiced 启动」之后的日志(避开旧报错)
+since_marker() {
+  awk '/voiced 启动/{out=""} {out=out $0 ORS} END{printf "%s", out}' "$DIR/voiced.log" 2>/dev/null
+}
+
 case "${1:-}" in
   status)
     echo "=== 路径检查 ==="
@@ -22,8 +27,8 @@ case "${1:-}" in
     [ -f "$DIR/.venv/Scripts/python.exe" ] && echo "venv python: 有" || echo "venv python: 缺(请先跑 python install.py)"
     echo "=== voiced 是否在运行 ==="
     powershell -NoProfile -Command "\$p = $PS_FIND; if (\$p) { \$p | ForEach-Object { 'running, PID ' + \$_.ProcessId } } else { 'NOT running' }"
-    echo "=== 日志末尾 ==="
-    [ -f "$DIR/voiced.log" ] && tail -n 20 "$DIR/voiced.log" || echo "(暂无 voiced.log)"
+    echo "=== 本次启动以来的日志 ==="
+    if [ -f "$DIR/voiced.log" ]; then since_marker | tail -n 25; else echo "(暂无 voiced.log)"; fi
     ;;
   stop)
     powershell -NoProfile -Command "$PS_FIND | ForEach-Object { Stop-Process -Id \$_.ProcessId -Force }"
@@ -78,9 +83,9 @@ case "${1:-}" in
     echo "6 连GitHub 返回 $(code https://github.com)"
     echo "7 连魔搭ModelScope 返回 $(code https://www.modelscope.cn)"
     echo "8 连抱抱脸HuggingFace 返回 $(code https://huggingface.co)"
-    echo "===== 日志最后报错 ====="
-    grep -iE "error|traceback|cannot|refused|timed out|timeout|connection|no module" \
-      "$DIR/voiced.log" 2>/dev/null | tail -3 || echo "无"
+    echo "===== 本次启动以来的报错 ====="
+    since_marker | grep -iE "error|traceback|cannot|refused|timed out|timeout|connection|no module" \
+      | tail -3 || echo "无(本次启动无报错)"
     echo "(返回200=通,000=连不上)"
     ;;
   *)
