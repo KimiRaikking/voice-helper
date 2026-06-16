@@ -62,9 +62,11 @@ def main():
     print(f"  本地离线加载: {'是 ' + OK if is_local else '否 ⚠ (会联网下载)'}")
 
     print("\n== 测试 ==")
-    # 2) load + inference on 2s synthetic audio (must not crash)
+    # 2) load + inference on synthetic audio (quiet noise, not pure silence —
+    #    silence makes SeACo-Paraformer emit 0 tokens -> [-1,512] error)
     step("模型加载 + 推理(合成音频,不崩即过)",
-         lambda: voiced.transcribe(np.zeros(voiced.SAMPLE_RATE * 2, dtype=np.float32)))
+         lambda: voiced.transcribe(
+             (np.random.randn(voiced.SAMPLE_RATE * 2) * 0.01).astype(np.float32)))
 
     # 3) real transcription on a bundled example wav, if any
     wav = _find_example_wav()

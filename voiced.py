@@ -480,7 +480,9 @@ def start_listener():
 
 def warmup():
     try:
-        transcribe(np.zeros(SAMPLE_RATE, dtype=np.float32))
+        # quiet noise, not pure silence: silence makes SeACo-Paraformer emit 0
+        # tokens -> a [-1,512] tensor error on some funasr versions.
+        transcribe((np.random.randn(SAMPLE_RATE) * 0.01).astype(np.float32))
     except Exception:
         pass
 
