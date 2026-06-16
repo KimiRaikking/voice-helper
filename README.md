@@ -110,7 +110,7 @@ python install.py          # Windows 也可用 py install.py
 2. **按住热键**(默认右 Option / 右 Alt)→ 说话 → **松开**。
 3. 文字自动转写并粘贴到光标处。
 
-点开图标的菜单可见:**状态** / **最近识别文字**(点击可复制) / **切换引擎**(Whisper/SenseVoice/Paraformer,当前打勾,点一下**即时热切换、无需重启**) / 退出。
+点开图标的菜单可见:**状态行**(开头 `[Whisper]`/`[SenseVoice]`/`[Paraformer]` 即当前引擎) / **切到 Whisper / SenseVoice / Paraformer**(点一下**即时热切换、无需重启**) / **复制最近识别** / 退出。
 
 - **macOS**:图标在屏幕**最顶部菜单栏**(靠近刘海一侧)。
 - **Windows**:图标在**右下角系统托盘**(若被折叠,点任务栏的 `^` 展开);**右键**图标看菜单。
