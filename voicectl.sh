@@ -51,6 +51,12 @@ case "${1:-}" in
     shift
     "$PY" "$DIR/download_model.py" "$@"   # 走 voice.env 里的 VOICE_PROXY
     ;;
+  clean)
+    # 杀掉残留的 python.exe 下载/worker 进程(不动 pythonw 后台服务)+ 删锁
+    powershell -NoProfile -Command "Get-Process python -ErrorAction SilentlyContinue | Stop-Process -Force" 2>/dev/null
+    rm -f "$DIR/.download.lock"
+    echo "已清理残留下载进程 + 锁文件。"
+    ;;
   doctor)
     code() { curl -s -m 8 -o /dev/null -w "%{http_code}" "$1" 2>/dev/null || echo 000; }
     eng=$(grep -E '^VOICE_ENGINE=' "$DIR/voice.env" 2>/dev/null | head -1 | cut -d= -f2)
@@ -72,6 +78,6 @@ case "${1:-}" in
     echo "(返回200=通,000=连不上)"
     ;;
   *)
-    echo "用法: bash voicectl.sh {status|start|stop|restart|log|doctor|download [all]|hot <词...>|fix <错> <对>}"
+    echo "用法: bash voicectl.sh {status|start|stop|restart|log|doctor|download [all]|hot <词...>|fix <错> <对>|clean}"
     ;;
 esac
