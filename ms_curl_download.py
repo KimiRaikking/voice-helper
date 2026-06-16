@@ -58,6 +58,10 @@ def _curl(url, dest, size):
             f"{dest.name} 下载不完整 ({dest.stat().st_size if dest.exists() else 0}/{size})")
 
 
+# Files not needed for inference — failure to fetch these is harmless.
+OPTIONAL = {"seg_dict"}
+
+
 def dl_model(model_id):
     from modelscope.hub.api import HubApi
     files = HubApi().get_model_files(model_id, revision="master", recursive=True)
@@ -68,10 +72,17 @@ def dl_model(model_id):
         if f.get("Type") == "tree":
             continue
         path = f["Path"]
-        if path.startswith(("example/", "fig/")) or path == "README.md":
-            continue  # skip demos/images/readme
+        if (path.startswith(("example/", "fig/")) or path == "README.md"
+                or path.endswith((".wav", ".mp3", ".png"))):
+            continue  # skip demos/images/audio
         url = f"https://www.modelscope.cn/models/{model_id}/resolve/master/{path}"
-        _curl(url, out / path, f.get("Size", 0))
+        try:
+            _curl(url, out / path, f.get("Size", 0))
+        except Exception as e:
+            if path in OPTIONAL:
+                print(f"    （{path} 下不下来,但推理用不到,跳过)", flush=True)
+            else:
+                raise RuntimeError(f"{name}/{path} 下载失败: {e}")
     print(f"✅ {name} 完成 -> {out}")
     return out
 
