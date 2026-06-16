@@ -20,8 +20,11 @@
 
 任意 Python 3.10+ 即可,安装脚本会自建 `.venv` 并装好对应平台的依赖、配置开机自启。
 
+> ⚠️ **(Windows 重要)放在纯英文路径**,如 `D:\voice-helper`、`C:\voice-helper`。
+> **不要**放在含中文/空格的目录(如 `D:\智能运维\...`)——funasr 的分词器在非ASCII路径下会报「模型 Not Found」。已装在中文路径的,跑 `bash voicectl.sh fixpath` 一键补救(见第⑨节)。
+
 ```bash
-git clone https://github.com/KimiRaikking/voice-helper.git
+git clone https://github.com/KimiRaikking/voice-helper.git   # 到纯英文路径!
 cd voice-helper
 python install.py          # Windows 也可用 py install.py
 ```
@@ -238,16 +241,23 @@ type voiced.log
 
 > 调试时直接跑 `run-debug.bat`(显示控制台,能看到实时报错),Ctrl+C 退出。
 
-**在 Git Bash 里用** —— 用 `voicectl.sh`(等价于上面的 .bat):
+**在 Git Bash 里用 `voicectl.sh`** —— 全部子命令速查:
 
-```bash
-bash voicectl.sh status     # 是否在跑 + 日志末尾
-bash voicectl.sh restart    # 重启
-bash voicectl.sh stop       # 停止
-bash voicectl.sh start      # 启动
-bash voicectl.sh log        # 实时跟踪日志(Ctrl+C 退出)
-bash voicectl.sh hot 时延 推理   # 加热词(Paraformer,即时生效)
-```
+| 命令 | 作用 |
+|------|------|
+| `bash voicectl.sh status` | 是否在跑 + 本次启动以来的日志 |
+| `bash voicectl.sh start` / `stop` / `restart` | 启动 / 停止 / 重启 |
+| `bash voicectl.sh log` | 实时跟踪日志(Ctrl+C 退出) |
+| `bash voicectl.sh doctor` | 一键诊断(venv/运行/引擎/模型/网络/加载路径) |
+| `bash voicectl.sh selftest` | 基础自测(加载/推理/纠正/剪贴板,不需麦克风) |
+| `bash voicectl.sh curldl [all]` | curl 断点续传下模型(烂网络/代理稳) |
+| `bash voicectl.sh checkmodel` | 比对配置期望文件名 vs 实际文件 |
+| `bash voicectl.sh fixpath` | 中文路径修复:模型挪到纯英文路径 |
+| `bash voicectl.sh clean` | 清掉卡住的下载进程 + 锁 |
+| `bash voicectl.sh hot 时延 推理` | 加热词(Paraformer,即时生效) |
+| `bash voicectl.sh fix 食盐 时延` | 加自动纠正规则(所有引擎,即时生效) |
+
+> 装完先跑 `bash voicectl.sh selftest` 验证链路;全 ✅ 再按热键说话。
 
 ---
 

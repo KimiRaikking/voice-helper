@@ -63,7 +63,8 @@
 
 <h2 id="start">〇、快速开始(跨平台,Git 仓库)</h2>
 <p>任意 Python 3.10+,安装脚本自建 <code>.venv</code> 并装好对应平台依赖、配置开机自启。</p>
-<pre><code>git clone https://github.com/KimiRaikking/voice-helper.git
+<div class="note warn">⚠️ <b>(Windows 重要)放在纯英文路径</b>(如 <code>D:\voice-helper</code>),<b>不要</b>放含中文/空格的目录(如 <code>D:\智能运维\...</code>)—— funasr 分词器在非ASCII路径下会报「模型 Not Found」。已装在中文路径的跑 <code>bash voicectl.sh fixpath</code> 补救(第⑨节)。</div>
+<pre><code>git clone https://github.com/KimiRaikking/voice-helper.git   # 纯英文路径!
 cd voice-helper
 python install.py          # Windows 也可用 py install.py</code></pre>
 <ul>
@@ -256,6 +257,7 @@ bash voicectl.sh restart</code></pre>
   <span class="os win">win</span> 切换音频设备后双击 <code>restart.bat</code> 重启。还不行查权限。</p>
   <p><b>图标看不到?</b> mac 在顶部菜单栏(刘海挡);win 在右下角托盘(点 <code>^</code> 展开)。</p>
   <p><b>有识别没粘贴?</b> mac 缺辅助功能权限;win 目标窗口可能拦截模拟键,文字已在剪贴板可手动 Ctrl+V。</p>
+  <p><b>(Windows)模型在却报 <code>Not Found ...bpe.model</code>?</b> 项目路径含中文/非ASCII(如 <code>D:\智能运维\</code>)时 SentencePiece 打不开 → 假性 Not Found。修:<code>bash voicectl.sh fixpath</code> 把模型挪到纯英文路径并改好 voice.env,再 <code>restart</code>。根治:项目本身也放纯英文路径。</p>
   <p><b>输出繁体?</b> 已用 OpenCC 转简体;确认 <code>opencc</code> 在 venv 里。</p>
   <p><b>改了不生效?</b> 重启服务(第⑥/⑦节)。</p>
   <p><b>下载 Whisper 大模型卡 <code>0.00B</code>?</b> HF 改用 Xet,国内常卡死。先试禁用 Xet:</p>
