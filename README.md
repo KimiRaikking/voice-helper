@@ -340,6 +340,14 @@ curl -s -m 8 -o /dev/null -w "%{http_code}\n" https://huggingface.co
   bash voicectl.sh restart
   ```
   > `download all` 可一次下 SenseVoice + Paraformer 两个。
+- **下载反复断 / `model.pt` 越滚越大(涨爆)** —— modelscope 的 python 下载在烂代理上续传是坏的(断线后往同一文件追加)。改用 **curl 断点续传**(真 HTTP-Range,不会涨爆),下到本地目录、自动改好 `voice.env` 指过去:
+  ```bash
+  bash voicectl.sh clean                  # 先杀掉卡住的进程
+  rm -rf ~/.cache/modelscope/hub/models/._____temp   # 删掉涨爆的临时文件
+  bash voicectl.sh curldl all             # curl 续传下 SenseVoice+Paraformer+标点
+  bash voicectl.sh restart
+  ```
+  > 下到 `~/voice-helper/models/` 下(已 gitignore),`voice.env` 会自动指向本地目录,funasr 直接读、不再联网。
 - **报 `self signed certificate in certificate chain`**(代理做 TLS 拦截):需信任公司根证书。
   ```bash
   # 1) 看 git 用的证书路径(复制输出)
