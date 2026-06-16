@@ -73,8 +73,8 @@ def dl_model(model_id):
             continue
         path = f["Path"]
         if (path.startswith(("example/", "fig/")) or path == "README.md"
-                or path.endswith((".wav", ".mp3", ".png"))):
-            continue  # skip demos/images/audio
+                or path.endswith((".mp3", ".png"))):
+            continue  # skip demos/images (keep root .wav: used by selftest)
         url = f"https://www.modelscope.cn/models/{model_id}/resolve/master/{path}"
         try:
             _curl(url, out / path, f.get("Size", 0))

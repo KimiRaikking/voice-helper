@@ -60,6 +60,9 @@ case "${1:-}" in
     shift
     "$PY" "$DIR/ms_curl_download.py" "$@"   # curl 断点续传下 ModelScope 模型(烂网络稳)
     ;;
+  selftest)
+    "$PY" "$DIR/selftest.py"   # 基础测试:模型加载/推理/纠正/剪贴板(不需麦克风)
+    ;;
   clean)
     # 杀掉残留的 python.exe 下载/worker 进程(不动 pythonw 后台服务)+ 删锁
     powershell -NoProfile -Command "Get-Process python -ErrorAction SilentlyContinue | Stop-Process -Force" 2>/dev/null
@@ -93,6 +96,6 @@ case "${1:-}" in
     echo "(返回200=通,000=连不上)"
     ;;
   *)
-    echo "用法: bash voicectl.sh {status|start|stop|restart|log|doctor|download [all]|hot <词...>|fix <错> <对>|clean|curldl [all]}"
+    echo "用法: bash voicectl.sh {status|start|stop|restart|log|doctor|download [all]|hot <词...>|fix <错> <对>|clean|curldl [all]|selftest}"
     ;;
 esac
