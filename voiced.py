@@ -485,6 +485,32 @@ def warmup():
         pass
 
 
+def _persist_engine(name):
+    """Write VOICE_ENGINE=name into voice.env so the choice survives restarts."""
+    path = os.path.join(_HERE, "voice.env")
+    try:
+        lines = open(path, encoding="utf-8").read().splitlines() if os.path.exists(path) else []
+        lines = [ln for ln in lines if not ln.strip().startswith("VOICE_ENGINE=")]
+        lines.append(f"VOICE_ENGINE={name}")
+        open(path, "w", encoding="utf-8").write("\n".join(lines) + "\n")
+    except Exception:
+        pass
+
+
+def switch_engine(name):
+    """Switch engine in place — no restart. Drops the loaded model so the new
+    engine loads lazily on the next utterance; persists the choice to voice.env."""
+    global ENGINE, _mlx, _fw_model, _whisper_backend, _sv_model, _pf_model
+    name = (name or "").lower()
+    if name not in ("whisper", "sensevoice", "paraformer") or name == ENGINE:
+        return
+    ENGINE = name
+    _mlx = _fw_model = _whisper_backend = _sv_model = _pf_model = None
+    _persist_engine(name)
+    print(f"切换引擎 -> {name}", flush=True)
+    threading.Thread(target=warmup, daemon=True).start()  # preload new model
+
+
 def _redirect_logs_if_no_console():
     """Under Windows pythonw there is no console, so stdout/stderr are None and
     any output (incl. errors) is lost. Send them to voiced.log next to the script."""
@@ -506,7 +532,7 @@ def main():
     vp.set_accessory_app()  # mac: menu-bar accessory (no Dock icon); no-op elsewhere
     threading.Thread(target=start_listener, daemon=True).start()
     threading.Thread(target=warmup, daemon=True).start()
-    create_tray(get_display, copy_last).run()  # blocks on the main thread
+    create_tray(get_display, copy_last, switch_engine, lambda: ENGINE).run()  # blocks (main thread)
 
 
 if __name__ == "__main__":

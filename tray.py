@@ -1,12 +1,15 @@
 """Cross-platform status tray/menu-bar indicator.
 
-Exposes create_tray(get_display, on_copy_last) -> object with a blocking .run().
+  create_tray(get_display, on_copy_last, on_switch_engine, current_engine) -> .run()
 
-  get_display() -> (icon_key, status_text, last_text)
-      icon_key in: idle | rec | proc | done | err
+  get_display() -> (icon_key, status_text, last_text)   icon_key: idle|rec|proc|done|err
+  on_copy_last()            copy last transcription
+  on_switch_engine(name)    switch engine in place (whisper|sensevoice|paraformer)
+  current_engine() -> name  currently active engine
 
-macOS uses rumps (menu-bar emoji); Windows/Linux use pystray (colored tray icon).
-Both are imported lazily so importing this module never fails on the wrong platform.
+macOS uses rumps (menu-bar emoji); Windows/Linux use pystray with the same emoji
+rendered into the tray icon (Segoe UI Emoji), falling back to a colored dot.
+Imports are lazy so this module never fails on the wrong platform.
 """
 import os
 import threading
@@ -14,18 +17,17 @@ import time
 
 from vplatform import IS_MAC
 
-# Emoji used as the macOS menu-bar title per state.
 ICON_EMOJI = {"idle": "🎤", "rec": "🔴", "proc": "⏳", "done": "✅", "err": "⚠️"}
-# RGBA fill colors for the pystray tray circle per state.
 ICON_COLORS = {
     "idle": (110, 168, 254, 255), "rec": (248, 80, 80, 255),
     "proc": (240, 200, 60, 255), "done": (80, 200, 120, 255),
     "err": (240, 120, 60, 255),
 }
+ENGINE_LABELS = {"whisper": "Whisper", "sensevoice": "SenseVoice", "paraformer": "Paraformer"}
 REFRESH_SECONDS = 0.15
 
 
-def _make_rumps_tray(get_display, on_copy_last):
+def _make_rumps_tray(get_display, on_copy_last, on_switch_engine, current_engine):
     import rumps
 
     class _RumpsTray(rumps.App):
@@ -33,7 +35,13 @@ def _make_rumps_tray(get_display, on_copy_last):
             super().__init__(ICON_EMOJI["idle"], quit_button="退出语音输入")
             self.status_item = rumps.MenuItem("状态: 准备中…")
             self.last_item = rumps.MenuItem("最近识别: (无)", callback=self._copy)
-            self.menu = [self.status_item, self.last_item, None]
+            self.eng_items = {}
+            sub = []
+            for key, label in ENGINE_LABELS.items():
+                mi = rumps.MenuItem(label, callback=lambda s, k=key: on_switch_engine(k))
+                self.eng_items[key] = mi
+                sub.append(mi)
+            self.menu = [self.status_item, self.last_item, None, ("切换引擎", sub), None]
             rumps.Timer(self._refresh, REFRESH_SECONDS).start()
 
         def _copy(self, _):
@@ -46,25 +54,51 @@ def _make_rumps_tray(get_display, on_copy_last):
             if last:
                 short = last if len(last) <= 40 else last[:40] + "…"
                 self.last_item.title = f"最近识别: {short}（点击复制）"
+            cur = current_engine()
+            for k, mi in self.eng_items.items():
+                mi.state = 1 if k == cur else 0
 
     return _RumpsTray()
 
 
-def _make_pystray_tray(get_display, on_copy_last):
+def _make_pystray_tray(get_display, on_copy_last, on_switch_engine, current_engine):
     import pystray
     from PIL import Image, ImageDraw
 
-    def circle(color):
+    def _circle(color):
         img = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
         ImageDraw.Draw(img).ellipse([10, 10, 54, 54], fill=color)
         return img
 
-    images = {k: circle(c) for k, c in ICON_COLORS.items()}
+    def _emoji(ch, key):
+        # render the actual color emoji glyph so Windows looks like macOS
+        try:
+            from PIL import ImageFont
+            img = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
+            d = ImageDraw.Draw(img)
+            font = ImageFont.truetype("seguiemj.ttf", 48)  # Segoe UI Emoji (Windows)
+            d.text((32, 34), ch, font=font, anchor="mm", embedded_color=True)
+            if img.getbbox():  # non-empty -> rendered ok
+                return img
+        except Exception:
+            pass
+        return _circle(ICON_COLORS[key])
+
+    images = {k: _emoji(ICON_EMOJI[k], k) for k in ICON_EMOJI}
 
     class _PystrayTray:
         def __init__(self):
+            eng_sub = pystray.Menu(*[
+                pystray.MenuItem(
+                    label,
+                    (lambda icon, item, kk=key: on_switch_engine(kk)),
+                    checked=(lambda item, kk=key: current_engine() == kk),
+                    radio=True,
+                ) for key, label in ENGINE_LABELS.items()
+            ])
             menu = pystray.Menu(
                 pystray.MenuItem(lambda item: get_display()[1], None, enabled=False),
+                pystray.MenuItem("切换引擎", eng_sub),
                 pystray.MenuItem("复制最近识别", lambda icon, item: on_copy_last()),
                 pystray.MenuItem("退出语音输入", self._quit),
             )
@@ -95,7 +129,6 @@ def _make_pystray_tray(get_display, on_copy_last):
     return _PystrayTray()
 
 
-def create_tray(get_display, on_copy_last):
-    if IS_MAC:
-        return _make_rumps_tray(get_display, on_copy_last)
-    return _make_pystray_tray(get_display, on_copy_last)
+def create_tray(get_display, on_copy_last, on_switch_engine, current_engine):
+    args = (get_display, on_copy_last, on_switch_engine, current_engine)
+    return _make_rumps_tray(*args) if IS_MAC else _make_pystray_tray(*args)
