@@ -111,13 +111,25 @@ WHISPER_MODEL_ENV = os.environ.get("WHISPER_MODEL") or None
 SENSEVOICE_REPO = "iic/SenseVoiceSmall"
 PARAFORMER_REPO = "iic/speech_seaco_paraformer_large_asr_nat-zh-cn-16k-common-vocab8404-pytorch"
 PUNC_REPO = "iic/punc_ct-transformer_zh-cn-common-vocab272727-pytorch"
-
-SENSEVOICE_MODEL = os.environ.get("SENSEVOICE_MODEL", SENSEVOICE_REPO)
-PARAFORMER_MODEL = os.environ.get("PARAFORMER_MODEL", PARAFORMER_REPO)
-# Punctuation model for Paraformer (it has none by default). Empty = no punctuation.
-PUNC_MODEL = os.environ.get("VOICE_PUNC", PUNC_REPO).strip()
-HOTWORD_ENV = (os.environ.get("VOICE_HOTWORD") or "").strip()
 _HERE = os.path.dirname(os.path.abspath(__file__))
+
+
+def _resolve_model(value):
+    """If value is a repo id but a curl-downloaded copy exists under models/<name>,
+    prefer that local dir — so it works offline even if voice.env wasn't updated."""
+    value = (value or "").strip()
+    if value and not os.path.isdir(value):
+        local = os.path.join(_HERE, "models", value.split("/")[-1])
+        if os.path.isdir(local):
+            return local
+    return value
+
+
+SENSEVOICE_MODEL = _resolve_model(os.environ.get("SENSEVOICE_MODEL", SENSEVOICE_REPO))
+PARAFORMER_MODEL = _resolve_model(os.environ.get("PARAFORMER_MODEL", PARAFORMER_REPO))
+# Punctuation model for Paraformer (it has none by default). Empty = no punctuation.
+PUNC_MODEL = _resolve_model(os.environ.get("VOICE_PUNC", PUNC_REPO))
+HOTWORD_ENV = (os.environ.get("VOICE_HOTWORD") or "").strip()
 HOTWORDS_FILE = os.path.join(_HERE, "hotwords.txt")
 CORRECTIONS_FILE = os.path.join(_HERE, "corrections.txt")
 LANG = os.environ.get("VOICE_LANG") or None
@@ -136,7 +148,17 @@ KEY_MAP = {
     "f5": Key.f5, "f6": Key.f6, "f7": Key.f7, "f8": Key.f8,
 }
 KEY_NAME = os.environ.get("VOICE_KEY", vp.DEFAULT_HOTKEY)
-HOTKEY = KEY_MAP.get(KEY_NAME, Key.alt_r)
+
+
+def _resolve_hotkeys(name):
+    keys = {KEY_MAP.get(name, Key.alt_r)}
+    # On many Windows layouts the Right Alt key is AltGr -> pynput reports alt_gr.
+    if name in ("alt_r", "alt") and hasattr(Key, "alt_gr"):
+        keys.add(Key.alt_gr)
+    return keys
+
+
+HOTKEYS = _resolve_hotkeys(KEY_NAME)
 
 _mlx = None
 _fw_model = None
@@ -301,11 +323,21 @@ def _transcribe_whisper(audio: np.ndarray) -> str:
     return _whisper_faster(audio)
 
 
+def _fa_init(model, **extra):
+    """Build funasr AutoModel kwargs. For a LOCAL directory, omit hub='ms' so it
+    never hits the ModelScope API (which fails on offline / TLS-intercepted nets);
+    only a repo id needs the hub."""
+    init = {"model": model, "disable_update": True, **extra}
+    if not os.path.isdir(str(model)):
+        init["hub"] = "ms"
+    return init
+
+
 def _transcribe_sensevoice(audio: np.ndarray) -> str:
     global _sv_model
     if _sv_model is None:
         from funasr import AutoModel
-        _sv_model = AutoModel(model=SENSEVOICE_MODEL, hub="ms", disable_update=True)
+        _sv_model = AutoModel(**_fa_init(SENSEVOICE_MODEL))
     from funasr.utils.postprocess_utils import rich_transcription_postprocess
     res = _sv_model.generate(input=audio, cache={}, language=(LANG or "auto"), use_itn=True)
     if not res:
@@ -337,10 +369,8 @@ def _transcribe_paraformer(audio: np.ndarray) -> str:
     global _pf_model
     if _pf_model is None:
         from funasr import AutoModel
-        init = {"model": PARAFORMER_MODEL, "hub": "ms", "disable_update": True}
-        if PUNC_MODEL:
-            init["punc_model"] = PUNC_MODEL  # adds punctuation (Paraformer has none)
-        _pf_model = AutoModel(**init)
+        extra = {"punc_model": PUNC_MODEL} if PUNC_MODEL else {}
+        _pf_model = AutoModel(**_fa_init(PARAFORMER_MODEL, **extra))
     kwargs = {"input": audio, "cache": {}}
     hot = read_hotwords()
     if hot:
@@ -423,13 +453,13 @@ def handle_release():
 
 
 def on_press(key):
-    if key == HOTKEY and not rec.active:
+    if key in HOTKEYS and not rec.active:
         rec.start()
         state.set("rec")
 
 
 def on_release(key):
-    if key == HOTKEY and rec.active:
+    if key in HOTKEYS and rec.active:
         threading.Thread(target=handle_release, daemon=True).start()
 
 
