@@ -302,12 +302,12 @@ bash voicectl.sh doctor
 # venv 是否装好(应输出 python.exe 路径,不报 No such file)
 ls ~/voice-helper/.venv/Scripts/python.exe
 
-# SenseVoice 模型是否真的下好(总大小应约 900M~1G,且有 model.pt)
-du -sh ~/.cache/modelscope/hub/models/iic/SenseVoiceSmall
-ls -lh ~/.cache/modelscope/hub/models/iic/SenseVoiceSmall
-
-# Paraformer 模型是否下好
-du -sh ~/.cache/modelscope/hub/models/iic/speech_seaco_paraformer*
+# 模型是否真的下好(总大小应约 900M~1G,且有 model.pt)
+# 两个可能的位置:① modelscope 缓存(download)② 本地 models/(curldl)
+du -sh ~/.cache/modelscope/hub/models/iic/* 2>/dev/null
+du -sh ~/voice-helper/models/* 2>/dev/null
+# 最省事:直接看 doctor 的第 4/5 行(两个位置都查)
+bash voicectl.sh doctor
 
 # 是否在运行 + 日志末尾
 bash voicectl.sh status

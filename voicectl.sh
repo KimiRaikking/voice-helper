@@ -65,14 +65,16 @@ case "${1:-}" in
     code() { curl -s -m 8 -o /dev/null -w "%{http_code}" "$1" 2>/dev/null || echo 000; }
     eng=$(grep -E '^VOICE_ENGINE=' "$DIR/voice.env" 2>/dev/null | head -1 | cut -d= -f2)
     run=$(powershell -NoProfile -Command "if (Get-CimInstance Win32_Process | Where-Object { \$_.CommandLine -like '*voiced.py*' }) {'是'} else {'否'}" 2>/dev/null)
-    ms="$HOME/.cache/modelscope/hub/models/iic"
+    ms="$HOME/.cache/modelscope/hub/models/iic"   # modelscope 缓存
+    loc="$DIR/models"                              # curldl 的本地目录
+    # 真实权重 *.pt:两个位置任一有即算"有"(snapshot_download 用缓存,curldl 用本地)
+    have() { ls "$ms"/*"$1"*/*.pt >/dev/null 2>&1 || ls "$loc"/*"$1"*/*.pt >/dev/null 2>&1; }
     echo "===== 诊断结果 ====="
     [ -f "$DIR/.venv/Scripts/python.exe" ] && echo "1 venv环境 有" || echo "1 venv环境 无"
     echo "2 正在运行 ${run:-否}"
     echo "3 当前引擎 ${eng:-空}"
-    # 检查真实权重文件(不只看目录是否存在,空目录=没下好)
-    ls "$ms/SenseVoiceSmall/"*.pt >/dev/null 2>&1 && echo "4 中文模型SenseVoice 有" || echo "4 中文模型SenseVoice 无(空/缺)"
-    ls "$ms"/*paraformer*/*.pt >/dev/null 2>&1 && echo "5 热词模型Paraformer 有" || echo "5 热词模型Paraformer 无(空/缺)"
+    have SenseVoice && echo "4 中文模型SenseVoice 有" || echo "4 中文模型SenseVoice 无(空/缺)"
+    have paraformer && echo "5 热词模型Paraformer 有" || echo "5 热词模型Paraformer 无(空/缺)"
     echo "6 连GitHub 返回 $(code https://github.com)"
     echo "7 连魔搭ModelScope 返回 $(code https://www.modelscope.cn)"
     echo "8 连抱抱脸HuggingFace 返回 $(code https://huggingface.co)"
