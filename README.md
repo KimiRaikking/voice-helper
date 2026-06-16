@@ -381,6 +381,14 @@ curl -s -m 8 -o /dev/null -w "%{http_code}\n" https://huggingface.co
 - macOS:缺「辅助功能」权限。
 - Windows:目标窗口可能拦截了模拟按键;先确认 `voice.env` 没设 `VOICE_NO_PASTE`,文字其实已在剪贴板,手动 Ctrl+V 可粘。
 
+**(Windows)模型文件明明在,却报 `Not Found ...bpe.model`?**
+项目路径里有**中文/非ASCII目录**(如 `D:\智能运维\...`)时,funasr 的 SentencePiece 分词器(C++ 库)打不开中文路径的文件 → 假性 Not Found。一条命令修(把模型挪到纯英文路径、自动改好 voice.env,repo/venv 不动):
+```bash
+bash voicectl.sh fixpath
+bash voicectl.sh restart
+```
+> 根治:项目本身也放在纯英文路径(`D:\voice-helper` 这种),别放带中文的目录。
+
 **输出繁体字?** 已用 OpenCC 强制转简体;若仍出现,确认 `opencc`(或 `opencc-python-reimplemented`)在 venv 里。
 
 **改了 `voiced.py` / `voice.env` 不生效?** 需重启服务(见第⑥/⑦节)。
