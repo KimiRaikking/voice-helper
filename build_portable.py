@@ -144,18 +144,24 @@ def copy_models():
     for base in bases:
         if base.is_dir():
             for name in os.listdir(base):
-                if "SenseVoiceSmall" in name:
-                    sources.append(base / name)
+                if "SenseVoiceSmall" in name and (base / name).is_dir():
+                    sources.append(base / name)  # 只认目录,跳过 .rar/.zip 等压缩包
 
     print(f"  目标: {target}")
     print(f"  候选源({len(sources)} 个):")
     for s in sources:
         print(f"    - {s}  存在={os.path.isdir(str(s))}")
 
+    def _is_model_dir(p):
+        try:
+            return p.is_dir() and any(f.endswith(".pt") for f in os.listdir(p))
+        except OSError:
+            return False
+
     seen, copied = set(), 0
     for src in sources:
         src = Path(str(src))
-        if not src.is_dir():
+        if not _is_model_dir(src):  # 必须是含 model.pt 的目录(跳过 .rar/空目录)
             continue
         name = src.name
         d = target / name
