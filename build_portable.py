@@ -11,9 +11,12 @@ r"""打包「免安装绿色版」(Windows)。
 同事拿到 zip 后:解压到**纯英文路径**(如 C:\voice-helper),双击「启动语音输入.bat」即可,
 不装 Python、不用 Git、不下模型、不碰代理。
 
-    python build_portable.py
+依赖**复用本机 .venv 里已装好的包**(本地拷贝,不走 PyPI),模型也是本地拷贝,所以打包
+**几乎不需要网络**——只有一个 ~10MB 的内嵌 Python 要从 python.org 下(封了就手动下一次
+`python-X.Y.Z-embed-amd64.zip` 放到脚本目录即可)。
 
-可选环境变量(走代理装依赖时):HTTPS_PROXY / HTTP_PROXY
+    用本机 venv 的 Python 跑(保证版本与已装包一致):
+    .venv\Scripts\python build_portable.py
 """
 import os
 import shutil
@@ -25,10 +28,15 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 DIST = HERE / "dist" / "voice-helper-portable"
-PYTAG = os.environ.get("PORTABLE_PY", "3.11.9")
-EMBED_URL = f"https://www.python.org/ftp/python/{PYTAG}/python-{PYTAG}-embed-amd64.zip"
-GETPIP_URL = "https://bootstrap.pypa.io/get-pip.py"
 PYDIR = DIST / "python"
+VENV_SP = HERE / ".venv" / "Lib" / "site-packages"  # 已装好的包(复用,免联网)
+
+# 内嵌 Python 版本必须与本机 .venv 的 Python major.minor 一致(编译扩展 ABI)。
+# 用运行本脚本的解释器版本自动匹配;可用 PORTABLE_PY 覆盖完整版本号。
+_EMBED_MICRO = {"3.10": "3.10.11", "3.11": "3.11.9", "3.12": "3.12.7", "3.13": "3.13.1"}
+_MM = f"{sys.version_info.major}.{sys.version_info.minor}"
+PYTAG = os.environ.get("PORTABLE_PY", _EMBED_MICRO.get(_MM, _MM + ".0"))
+EMBED_URL = f"https://www.python.org/ftp/python/{PYTAG}/python-{PYTAG}-embed-amd64.zip"
 
 # 要随程序打包的文件(代码 + 启动脚本 + 配置样例)
 FILES = [
@@ -47,33 +55,57 @@ def fetch(url, dest):
     urllib.request.urlretrieve(url, dest)
 
 
+def _local_embed_zip():
+    """允许用本地已下好的内嵌 Python zip(免联网)。放脚本目录即可,或用
+    PORTABLE_EMBED_ZIP 指定。"""
+    env = os.environ.get("PORTABLE_EMBED_ZIP")
+    if env and Path(env).exists():
+        return Path(env)
+    for p in HERE.glob(f"python-{PYTAG}-embed-amd64.zip"):
+        return p
+    for p in HERE.glob("python-*-embed-amd64.zip"):
+        return p
+    return None
+
+
 def stage_python():
     PYDIR.mkdir(parents=True, exist_ok=True)
+    local = _local_embed_zip()
     z = DIST / "py-embed.zip"
-    fetch(EMBED_URL, z)
+    if local:
+        print(f"• 用本地内嵌 Python: {local}")
+        shutil.copy2(local, z)
+    else:
+        fetch(EMBED_URL, z)  # ~10MB,python.org;封了就手动下一次放脚本目录
     with zipfile.ZipFile(z) as f:
         f.extractall(PYDIR)
     z.unlink()
-    # 打开 site,让 pip 安装的包能被找到
+    # 打开 site + 让 Lib\site-packages 生效(不需要 pip)
     for pth in PYDIR.glob("python*._pth"):
         txt = pth.read_text(encoding="utf-8")
         txt = txt.replace("#import site", "import site")
         if "Lib\\site-packages" not in txt:
             txt += "\nLib\\site-packages\n"
         pth.write_text(txt, encoding="utf-8")
-    # 装 pip
-    getpip = DIST / "get-pip.py"
-    fetch(GETPIP_URL, getpip)
-    sh([PYDIR / "python.exe", getpip, "--no-warn-script-location"])
-    getpip.unlink()
 
 
-def install_deps():
-    py = PYDIR / "python.exe"
-    sh([py, "-m", "pip", "install", "--no-warn-script-location", "-U", "pip"])
-    for req in ("requirements-common.txt", "requirements-windows.txt",
-                "requirements-sensevoice.txt"):
-        sh([py, "-m", "pip", "install", "--no-warn-script-location", "-r", HERE / req])
+def copy_site_packages():
+    """复用本机 .venv 里已装好的包(本地拷贝,完全不走 PyPI / 代理)。"""
+    if not VENV_SP.is_dir():
+        sys.exit(f"找不到已装好的包目录: {VENV_SP}\n请在已 install.py 装好的机器上运行,"
+                 f"且用 .venv 的 Python 跑: .venv\\Scripts\\python build_portable.py")
+    dst = PYDIR / "Lib" / "site-packages"
+    dst.mkdir(parents=True, exist_ok=True)
+    print(f"• 复制依赖 {VENV_SP} -> {dst}(可能要一两分钟)")
+    for name in os.listdir(VENV_SP):
+        if name in ("pip", "setuptools", "wheel", "_distutils_hack") or name.startswith("pip-"):
+            continue  # 运行时不需要
+        s = VENV_SP / name
+        d = dst / name
+        if s.is_dir():
+            shutil.copytree(s, d, dirs_exist_ok=True)
+        else:
+            shutil.copy2(s, d)
 
 
 def copy_code():
@@ -174,7 +206,7 @@ def main():
         shutil.rmtree(DIST)
     DIST.mkdir(parents=True)
     stage_python()
-    install_deps()
+    copy_site_packages()
     copy_code()
     copy_models()
     write_launchers()

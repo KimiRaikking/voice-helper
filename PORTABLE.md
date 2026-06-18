@@ -4,16 +4,20 @@
 
 ## 一、研发:打包(只做一次)
 
-在一台**已经装好、能正常用**的 Windows 机器上(模型已下好):
+在一台**已经装好、能正常用**的 Windows 机器上(模型已下好),**用 .venv 的 Python 跑**:
 
 ```bash
-python build_portable.py
+.venv\Scripts\python build_portable.py
 ```
 
-> 走代理装依赖时,先 `set HTTPS_PROXY=...` 和 `set HTTP_PROXY=...`。
+**几乎不需要网络/代理**:
+- 依赖 = **复用本机 `.venv` 里已装好的包**(本地拷贝,不走 PyPI)
+- 模型 = **本地拷贝**(你已经下好的)
+- 唯一联网项:一个 ~10MB 的内嵌 Python(从 python.org)。若 python.org 被封,手动下一次
+  `python-3.x.x-embed-amd64.zip`(对应你的 Python 版本)放到脚本同目录即可,脚本会自动用本地的。
 
 产物:`dist\voice-helper-portable.zip`(约 2~3GB,含内嵌 Python + 依赖 + SenseVoice 模型)。
-把这个 zip 放到内部共享盘,发给同事。
+放到内部共享盘发给同事。
 
 > 绿色版默认带 **SenseVoice** 引擎(最稳)。打包前先在本机把 SenseVoice 模型下好(`bash voicectl.sh curldl` 或首次说话自动下)。
 
