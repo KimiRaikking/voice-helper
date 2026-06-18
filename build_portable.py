@@ -123,27 +123,43 @@ def copy_code():
 
 
 def copy_models():
-    """把已下好的模型放进 bundle\\models\\，同事无需联网。"""
+    """把已下好的 SenseVoice 模型放进 bundle\\models\\，同事无需联网。
+    优先用 voice.env 实际配置的路径(fixpath 后在 <盘符>\\voicehelper-models)。"""
     target = DIST / "models"
     target.mkdir(exist_ok=True)
-    # 优先 curldl 的本地目录,其次 modelscope 缓存
-    candidates = [
-        HERE / "models",
-        Path.home() / ".cache" / "modelscope" / "hub" / "models" / "iic",
-        Path(os.environ.get("SystemDrive", "C:") + os.sep + "voicehelper-models"),
-    ]
-    want = ("SenseVoiceSmall",)  # 绿色版默认只带 SenseVoice(够用、最稳)
-    for base in candidates:
-        if not base.exists():
+
+    sources = []
+    # 1) 读 voiced 解析出的真实模型路径(最准,认 fixpath / 本地目录 / 缓存)
+    try:
+        sys.path.insert(0, str(HERE))
+        import voiced
+        if voiced.SENSEVOICE_MODEL and os.path.isdir(voiced.SENSEVOICE_MODEL):
+            sources.append(Path(voiced.SENSEVOICE_MODEL))
+    except Exception as e:
+        print(f"  (读 voice.env 模型路径失败,改用目录搜索: {e})")
+    # 2) 兜底:常见位置搜 SenseVoiceSmall(含 fixpath 的两个盘)
+    drives = {os.environ.get("SystemDrive", "C:"), os.path.splitdrive(str(HERE))[0] or "C:"}
+    bases = [HERE / "models", Path.home() / ".cache/modelscope/hub/models/iic"]
+    bases += [Path(d + os.sep + "voicehelper-models") for d in drives if d]
+    for base in bases:
+        if base.is_dir():
+            for name in os.listdir(base):
+                if "SenseVoiceSmall" in name:
+                    sources.append(base / name)
+
+    seen = set()
+    for src in sources:
+        name = src.name
+        d = target / name
+        if name in seen or d.exists():
             continue
-        for name in os.listdir(base):
-            if any(w in name for w in want):
-                d = target / name
-                if not d.exists():
-                    print(f"• 复制模型 {name}")
-                    shutil.copytree(base / name, d)
+        seen.add(name)
+        print(f"• 复制模型 {src} -> {d}")
+        shutil.copytree(src, d)
+
     if not any(target.iterdir()):
-        print("⚠ 没找到已下好的 SenseVoice 模型!请先在本机用 voiced 跑通(下好模型)再打包。")
+        print("⚠ 没找到 SenseVoice 模型!先在本机跑通(下好模型)再打包;"
+              "或手动把 SenseVoiceSmall 目录拷到 dist\\voice-helper-portable\\models\\。")
 
 
 _LAUNCH = r'''@echo off
