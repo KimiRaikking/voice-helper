@@ -147,19 +147,31 @@ def copy_models():
                 if "SenseVoiceSmall" in name:
                     sources.append(base / name)
 
-    seen = set()
+    print(f"  目标: {target}")
+    print(f"  候选源({len(sources)} 个):")
+    for s in sources:
+        print(f"    - {s}  存在={os.path.isdir(str(s))}")
+
+    seen, copied = set(), 0
     for src in sources:
+        src = Path(str(src))
+        if not src.is_dir():
+            continue
         name = src.name
         d = target / name
         if name in seen or d.exists():
             continue
         seen.add(name)
-        print(f"• 复制模型 {src} -> {d}")
-        shutil.copytree(src, d)
+        try:
+            print(f"• 复制模型 {src} -> {d}", flush=True)
+            shutil.copytree(src, d)
+            copied += 1
+        except Exception as e:
+            print(f"  ⚠ 复制失败({type(e).__name__}: {e}),跳过这个源", flush=True)
 
-    if not any(target.iterdir()):
-        print("⚠ 没找到 SenseVoice 模型!先在本机跑通(下好模型)再打包;"
-              "或手动把 SenseVoiceSmall 目录拷到 dist\\voice-helper-portable\\models\\。")
+    if copied == 0:
+        print("⚠ 没复制到任何模型!可手动把 SenseVoiceSmall 目录拷到 "
+              f"{target}\\  下再继续(然后注释掉 main 里的 copy_models 重跑,或直接打包)。")
 
 
 _LAUNCH = r'''@echo off
