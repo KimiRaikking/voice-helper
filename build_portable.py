@@ -114,7 +114,7 @@ def copy_models():
         print("⚠ 没找到已下好的 SenseVoice 模型!请先在本机用 voiced 跑通(下好模型)再打包。")
 
 
-_LAUNCH = r"""@echo off
+_LAUNCH = r'''@echo off
 chcp 65001 >nul
 cd /d "%~dp0"
 echo 正在启动语音输入...
@@ -127,7 +127,7 @@ start "" "%~dp0python\pythonw.exe" "%~dp0voiced.py"
 echo 已启动!右下角托盘有 🎤 图标。按住右 Alt 键说话,松开即出字。
 echo (已设为开机自启;关闭本窗口不影响运行)
 timeout /t 5 >nul
-"""
+'''
 
 _STOP = r"""@echo off
 chcp 65001 >nul
