@@ -218,15 +218,26 @@ def zip_bundle():
 def main():
     if os.name != "nt":
         sys.exit("请在 Windows 上运行此打包脚本。")
-    if DIST.exists():
-        shutil.rmtree(DIST)
-    DIST.mkdir(parents=True)
-    stage_python()
-    copy_site_packages()
-    copy_code()
-    copy_models()
-    write_launchers()
-    zip_bundle()
+    print(f"Python: {sys.version.split()[0]}  内嵌版本: {PYTAG}")
+    print(f"已装包目录: {VENV_SP}  存在={VENV_SP.is_dir()}")
+    steps = [
+        ("清理输出目录", lambda: (shutil.rmtree(DIST) if DIST.exists() else None, DIST.mkdir(parents=True))),
+        ("准备内嵌 Python", stage_python),
+        ("复制依赖(site-packages)", copy_site_packages),
+        ("复制代码 + 写配置", copy_code),
+        ("复制模型", copy_models),
+        ("写一键启动器", write_launchers),
+        ("打包 zip", zip_bundle),
+    ]
+    for i, (name, fn) in enumerate(steps, 1):
+        print(f"\n===> 步骤 {i}/{len(steps)}: {name}", flush=True)
+        try:
+            fn()
+        except Exception as e:
+            import traceback
+            print(f"❌ 步骤「{name}」失败: {type(e).__name__}: {e}", flush=True)
+            traceback.print_exc()
+            sys.exit(1)
     print("\n把 dist\\voice-helper-portable.zip 发给同事即可。")
 
 
