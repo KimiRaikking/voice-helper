@@ -1,0 +1,186 @@
+#!/usr/bin/env python3
+r"""打包「免安装绿色版」(Windows)。
+
+在一台**已经装好并能正常用**的 Windows 机器上运行(模型已下好、代理已配)。
+产物:dist\voice-helper-portable\  以及同名 .zip —— 内含:
+  - 内嵌 Python(embeddable,无需系统装 Python)
+  - 全部依赖(faster-whisper / funasr / sensevoice 等)
+  - 已下好的模型(同事无需联网/代理)
+  - 一键启动器(启动语音输入.bat / 停止.bat / 卸载.bat)
+
+同事拿到 zip 后:解压到**纯英文路径**(如 C:\voice-helper),双击「启动语音输入.bat」即可,
+不装 Python、不用 Git、不下模型、不碰代理。
+
+    python build_portable.py
+
+可选环境变量(走代理装依赖时):HTTPS_PROXY / HTTP_PROXY
+"""
+import os
+import shutil
+import subprocess
+import sys
+import urllib.request
+import zipfile
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+DIST = HERE / "dist" / "voice-helper-portable"
+PYTAG = os.environ.get("PORTABLE_PY", "3.11.9")
+EMBED_URL = f"https://www.python.org/ftp/python/{PYTAG}/python-{PYTAG}-embed-amd64.zip"
+GETPIP_URL = "https://bootstrap.pypa.io/get-pip.py"
+PYDIR = DIST / "python"
+
+# 要随程序打包的文件(代码 + 启动脚本 + 配置样例)
+FILES = [
+    "voiced.py", "vplatform.py", "tray.py", "add_hotword.py", "add_fix.py",
+    "voice.env.example", "hotwords.txt.example", "corrections.txt.example",
+]
+
+
+def sh(cmd):
+    print("  $", " ".join(map(str, cmd)), flush=True)
+    subprocess.check_call([str(c) for c in cmd])
+
+
+def fetch(url, dest):
+    print(f"• 下载 {url}")
+    urllib.request.urlretrieve(url, dest)
+
+
+def stage_python():
+    PYDIR.mkdir(parents=True, exist_ok=True)
+    z = DIST / "py-embed.zip"
+    fetch(EMBED_URL, z)
+    with zipfile.ZipFile(z) as f:
+        f.extractall(PYDIR)
+    z.unlink()
+    # 打开 site,让 pip 安装的包能被找到
+    for pth in PYDIR.glob("python*._pth"):
+        txt = pth.read_text(encoding="utf-8")
+        txt = txt.replace("#import site", "import site")
+        if "Lib\\site-packages" not in txt:
+            txt += "\nLib\\site-packages\n"
+        pth.write_text(txt, encoding="utf-8")
+    # 装 pip
+    getpip = DIST / "get-pip.py"
+    fetch(GETPIP_URL, getpip)
+    sh([PYDIR / "python.exe", getpip, "--no-warn-script-location"])
+    getpip.unlink()
+
+
+def install_deps():
+    py = PYDIR / "python.exe"
+    sh([py, "-m", "pip", "install", "--no-warn-script-location", "-U", "pip"])
+    for req in ("requirements-common.txt", "requirements-windows.txt",
+                "requirements-sensevoice.txt"):
+        sh([py, "-m", "pip", "install", "--no-warn-script-location", "-r", HERE / req])
+
+
+def copy_code():
+    for name in FILES:
+        src = HERE / name
+        if src.exists():
+            shutil.copy2(src, DIST / name)
+    # 默认配置:SenseVoice(同事最稳的引擎)
+    (DIST / "voice.env").write_text(
+        "VOICE_ENGINE=sensevoice\nVOICE_KEY=alt_r\nVOICE_LANG=zh\n", encoding="utf-8")
+    for seed in ("hotwords.txt", "corrections.txt"):
+        ex = DIST / f"{seed}.example"
+        if ex.exists():
+            shutil.copy2(ex, DIST / seed)
+
+
+def copy_models():
+    """把已下好的模型放进 bundle\\models\\，同事无需联网。"""
+    target = DIST / "models"
+    target.mkdir(exist_ok=True)
+    # 优先 curldl 的本地目录,其次 modelscope 缓存
+    candidates = [
+        HERE / "models",
+        Path.home() / ".cache" / "modelscope" / "hub" / "models" / "iic",
+        Path(os.environ.get("SystemDrive", "C:") + os.sep + "voicehelper-models"),
+    ]
+    want = ("SenseVoiceSmall",)  # 绿色版默认只带 SenseVoice(够用、最稳)
+    for base in candidates:
+        if not base.exists():
+            continue
+        for name in os.listdir(base):
+            if any(w in name for w in want):
+                d = target / name
+                if not d.exists():
+                    print(f"• 复制模型 {name}")
+                    shutil.copytree(base / name, d)
+    if not any(target.iterdir()):
+        print("⚠ 没找到已下好的 SenseVoice 模型!请先在本机用 voiced 跑通(下好模型)再打包。")
+
+
+_LAUNCH = r"""@echo off
+chcp 65001 >nul
+cd /d "%~dp0"
+echo 正在启动语音输入...
+REM 开机自启:在“启动”文件夹放一个隐藏启动项(指向本绿色版)
+set "VBS=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\voice-helper.vbs"
+> "%VBS%" echo Set s = CreateObject("Wscript.Shell")
+>> "%VBS%" echo s.Run """%~dp0python\pythonw.exe"" ""%~dp0voiced.py""", 0, False
+REM 立即启动一份
+start "" "%~dp0python\pythonw.exe" "%~dp0voiced.py"
+echo 已启动!右下角托盘有 🎤 图标。按住右 Alt 键说话,松开即出字。
+echo (已设为开机自启;关闭本窗口不影响运行)
+timeout /t 5 >nul
+"""
+
+_STOP = r"""@echo off
+chcp 65001 >nul
+powershell -NoProfile -Command "Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*voiced.py*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }"
+echo 已停止语音输入。
+timeout /t 3 >nul
+"""
+
+_UNINSTALL = r"""@echo off
+chcp 65001 >nul
+call "%~dp0停止.bat"
+del "%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\voice-helper.vbs" 2>nul
+echo 已卸载(已停止 + 取消开机自启)。删除本文件夹即可彻底清除。
+timeout /t 4 >nul
+"""
+
+
+def write_launchers():
+    (DIST / "启动语音输入.bat").write_text(_LAUNCH, encoding="utf-8")
+    (DIST / "停止.bat").write_text(_STOP, encoding="utf-8")
+    (DIST / "卸载.bat").write_text(_UNINSTALL, encoding="utf-8")
+    (DIST / "使用说明.txt").write_text(
+        "Voice Helper 绿色版(免安装)\n\n"
+        "1. 把本文件夹解压到纯英文路径,如 C:\\voice-helper(不要放中文目录!)\n"
+        "2. 双击「启动语音输入.bat」\n"
+        "3. 右下角托盘出现 🎤 图标后,在任意输入框按住【右 Alt 键】说话,松开即出字\n"
+        "4. 已设为开机自启;想停用双击「停止.bat」,想彻底删除双击「卸载.bat」再删文件夹\n",
+        encoding="utf-8")
+
+
+def zip_bundle():
+    zpath = HERE / "dist" / "voice-helper-portable.zip"
+    print(f"• 打包 {zpath}")
+    with zipfile.ZipFile(zpath, "w", zipfile.ZIP_DEFLATED) as zf:
+        for p in DIST.rglob("*"):
+            zf.write(p, p.relative_to(DIST.parent))
+    print(f"✅ 完成: {zpath}  ({zpath.stat().st_size/1e6:.0f} MB)")
+
+
+def main():
+    if os.name != "nt":
+        sys.exit("请在 Windows 上运行此打包脚本。")
+    if DIST.exists():
+        shutil.rmtree(DIST)
+    DIST.mkdir(parents=True)
+    stage_python()
+    install_deps()
+    copy_code()
+    copy_models()
+    write_launchers()
+    zip_bundle()
+    print("\n把 dist\\voice-helper-portable.zip 发给同事即可。")
+
+
+if __name__ == "__main__":
+    main()

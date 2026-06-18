@@ -22,3 +22,6 @@ hotwords.txt
 corrections.txt
 
 .download.lock
+
+# portable build output
+dist/
