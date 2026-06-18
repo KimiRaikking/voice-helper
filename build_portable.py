@@ -98,8 +98,6 @@ def copy_site_packages():
     dst.mkdir(parents=True, exist_ok=True)
     print(f"• 复制依赖 {VENV_SP} -> {dst}(可能要一两分钟)")
     for name in os.listdir(VENV_SP):
-        if name in ("pip", "setuptools", "wheel", "_distutils_hack") or name.startswith("pip-"):
-            continue  # 运行时不需要
         s = VENV_SP / name
         d = dst / name
         if s.is_dir():

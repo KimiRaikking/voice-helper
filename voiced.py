@@ -28,6 +28,10 @@ import sys
 import threading
 import time
 
+# Make sibling modules (vplatform, tray) importable regardless of how we're
+# launched — the embeddable Python (portable build) does NOT add the script dir.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 import numpy as np
 import sounddevice as sd
 from pynput import keyboard
